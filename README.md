@@ -11,6 +11,8 @@ Orchestrator (1)            your Claude Code session, runs /hive:build
 
 Run `python3 plugins/hive/skills/build/engine/hive.py roster` to print the full tree.
 
+Diagrams of the whole system (mind map, chain of command, phase workflow, dispatch lifecycle, verification, parallel execution, failure handling, data model, agent protocols) are in [`docs/system/`](docs/system/README.md).
+
 ## Install
 
 Option A, as a plugin (recommended). Inside Claude Code:
