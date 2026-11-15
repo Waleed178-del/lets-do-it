@@ -594,6 +594,13 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
         for d in report["deliverables"]:
             if report["status"] == "PASS" and d.get("done") is False:
                 reasons.append("report claims PASS with an undone deliverable: %s" % d.get("item"))
+        actual_children = {t["task_id"]: t for t in task_table(hive).values() if t.get("parent_task") == task_id}
+        for c in report["children"]:
+            real = actual_children.get(c.get("task_id"))
+            if real is None:
+                reasons.append("report lists child %s which this task never dispatched" % c.get("task_id"))
+            elif str(c.get("status", "")).upper() != real["status"]:
+                reasons.append("report misstates child %s as %s, engine recorded %s" % (c["task_id"], c.get("status"), real["status"]))
 
         if report["status"] == "BLOCKED":
             final = "BLOCKED"
@@ -633,6 +640,8 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
         "failure_reasons": reasons if final != "PASS" else [],
         "summary": report.get("summary"), "deliverables": report.get("deliverables"),
         "agent_checks": report.get("checks"), "issues": report.get("issues"), "children": report.get("children"),
+        "accepted_child_failures": [t["task_id"] for t in task_table(hive).values()
+                                    if t.get("parent_task") == task_id and t["status"] in ("FAIL", "BLOCKED")] if final == "PASS" else [],
         "verification": [{k: v[k] for k in ("command", "exit_code", "seconds")} for v in verification],
         "scope": scope, "scope_source": scope_source, "files_changed": files,
         "start_sha": start_sha, "end_sha": end_sha, "stash": stash_ref,
@@ -788,6 +797,11 @@ def final_report(hive):
             if r.get("stash"):
                 md.append("* Failed work preserved in git stash `%s`" % r["stash"])
             md.append("")
+    overrides = [r for r in reports.values() if r.get("accepted_child_failures")]
+    if overrides:
+        md += ["", "## Commander overrides (PASS accepted despite failed children)", ""]
+        md += ["* `%s` accepted %s. Reason given: %s" % (r["task_id"], ", ".join(r["accepted_child_failures"]), r.get("summary") or "")
+               for r in overrides]
     issues = [(r.get("task_id"), i) for r in reports.values() for i in (r.get("issues") or [])]
     if issues:
         md += ["", "## Assumptions and open issues reported by agents", ""]

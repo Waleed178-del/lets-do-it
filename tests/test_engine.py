@@ -123,6 +123,27 @@ class HiveTest(unittest.TestCase):
         self.assertEqual(w["stash"], "hive-failed:T0003-wrk-scope-risk")
         self.assertIn("hive-failed:T0003-wrk-scope-risk", self.git("stash", "list"))
 
+    def test_commander_cannot_misstate_child_results(self):
+        self.set_config(retries={"manager": 0, "supervisor": 0, "worker": 0})
+        sup = {"role": "sup-requirements", "title": "Req", "mock": {"status": "PASS", "claim_child_status": "PASS",
+               "dispatch": [{"role": "wrk-scope-risk", "title": "Risks", "verify": ["false"]}]}}
+        mgr = {"role": "mgr-product", "title": "D", "mock": {"dispatch": [sup]}}
+        self.hive("dispatch", "--brief", self.brief(mgr))
+        s = json.loads(self.hive("show", "T0002-sup-requirements", ok=True).stdout)
+        self.assertEqual(s["status"], "FAIL")
+        self.assertTrue(any("misstates child T0003-wrk-scope-risk as PASS, engine recorded FAIL" in r for r in s["failure_reasons"]))
+
+    def test_commander_override_is_recorded_and_reported(self):
+        self.set_config(retries={"manager": 0, "supervisor": 0, "worker": 0})
+        sup = {"role": "sup-requirements", "title": "Req", "mock": {"status": "PASS",
+               "dispatch": [{"role": "wrk-scope-risk", "title": "Risks", "verify": ["false"]}]}}
+        mgr = {"role": "mgr-product", "title": "D", "mock": {"dispatch": [sup]}}
+        self.hive("dispatch", "--brief", self.brief(mgr), ok=True)
+        s = json.loads(self.hive("show", "T0002-sup-requirements", ok=True).stdout)
+        self.assertEqual(s["status"], "PASS")
+        self.assertEqual(s["accepted_child_failures"], ["T0003-wrk-scope-risk"])
+        self.assertIn("Commander overrides", self.hive("report", ok=True).stdout)
+
     def test_scope_violation_fails(self):
         self.set_config(retries={"manager": 0, "supervisor": 0, "worker": 0})
         sup = {"role": "sup-requirements", "title": "Req", "mock": {"dispatch": [{

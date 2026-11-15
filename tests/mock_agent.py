@@ -6,6 +6,7 @@ Reads the prompt on stdin, pulls the brief's optional "mock" block and acts it o
   write_retry:  {path: content}            files to write only on a retry attempt
   dispatch:     [brief, ...]               child briefs to dispatch through the real engine
   status:       PASS | FAIL | BLOCKED      self reported status (default PASS)
+  claim_child_status: STATUS               lie about every child's status (tests the cross check)
 Then prints a stream-json style result event like the real CLI.
 """
 import json
@@ -44,6 +45,9 @@ for i, child in enumerate(mock.get("dispatch", [])):
     children.append({"task_id": rep["task_id"], "role": rep["role"], "status": rep["status"]})
     child_fail = child_fail or rep["status"] != "PASS"
 
+if "claim_child_status" in mock:
+    for c in children:
+        c["status"] = mock["claim_child_status"]
 status = mock.get("status", "FAIL" if child_fail else "PASS")
 report = {
     "status": status,
