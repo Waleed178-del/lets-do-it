@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "deliverables", "checks", "issues", "children"],
+  "properties": {
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+    "summary": {"type": "string", "description": "Two to five sentences: what was done and the state it was left in."},
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["item", "done", "evidence"],
+        "properties": {
+          "item": {"type": "string"},
+          "done": {"type": "boolean"},
+          "evidence": {"type": "string", "description": "File path, command output excerpt or test name that proves it."}
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "Every verification command you actually ran, with its real exit code.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "exit_code", "result"],
+        "properties": {
+          "command": {"type": "string"},
+          "exit_code": {"type": "integer"},
+          "result": {"type": "string"}
+        }
+      }
+    },
+    "issues": {"type": "array", "items": {"type": "string"}, "description": "Defects, risks, assumptions taken, or for BLOCKED the exact thing needed."},
+    "children": {
+      "type": "array",
+      "description": "Commanders only: every child task you dispatched and its final status. Workers return an empty array.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "role", "status"],
+        "properties": {
+          "task_id": {"type": "string"},
+          "role": {"type": "string"},
+          "status": {"type": "string"}
+        }
+      }
+    }
+  }
+}

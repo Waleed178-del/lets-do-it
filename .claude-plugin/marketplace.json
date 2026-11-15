@@ -1,0 +1,12 @@
+{
+  "name": "lets-do-it",
+  "owner": {"name": "waleed178-del"},
+  "description": "Hive: a hierarchical multi agent system for Claude Code that builds products from a plan.",
+  "plugins": [
+    {
+      "name": "hive",
+      "source": "./plugins/hive",
+      "description": "Hierarchical multi agent build system (orchestrator, managers, supervisors, workers) that turns a plan into a working website and optional mobile apps."
+    }
+  ]
+}

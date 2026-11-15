@@ -1,0 +1,7 @@
+{
+  "name": "hive",
+  "version": "1.0.0",
+  "description": "Hierarchical multi agent build system: an orchestrator, 7 managers, 18 supervisors and 62 workers that build a website and optional Android and iOS apps from your plan, with engine enforced chain of command and verified reports.",
+  "author": {"name": "waleed178-del"},
+  "keywords": ["multi-agent", "orchestration", "hierarchy", "website-builder", "mobile"]
+}
