@@ -53,6 +53,8 @@ class HiveCase(unittest.TestCase):
         return p
 
     def brief(self, data, name="b.json"):
+        data = dict(data)
+        data.setdefault("objective", "test objective")
         path = os.path.join(self.dir, ".hive", "briefs", name)
         dump(data, path)
         return path

@@ -351,6 +351,29 @@ class FeatureTest(HiveCase):
         b["verify"], b["title"] = ["@commands"], "V3"
         self.assertEqual(self.hive("dispatch", "--brief", self.brief(b)).returncode, 1)  # build is false
 
+    def test_malformed_brief_is_rejected_before_any_agent_runs(self):
+        bad = {"role": "mgr-product", "title": "Bad", "deliverables": ["docs/product/risks.md:"],
+               "verify": ["test -s docs/product/risks.md:"], "scope": ["docs/product/risks.md:"], "effort": "huge"}
+        p = self.hive("dispatch", "--brief", self.brief(bad))
+        self.assertEqual(p.returncode, 3)
+        for frag in ("scope entry", "verify command", "deliverable", "unknown effort"):
+            self.assertIn(frag, p.stderr)
+        self.assertEqual(self.calls("run"), [])
+        p = self.hive("dispatch", "--brief", self.brief({"role": "mgr-product", "title": "No objective", "objective": " "}))
+        self.assertIn("'objective' must be a non empty string", p.stderr)
+
+    def test_supervisor_line_budget_blocks_doing_worker_work(self):
+        self.enforce()
+        w = {"role": "wrk-plan-parser", "title": "P"}
+        big = "\n".join("line %d" % i for i in range(100)) + "\n"
+        sup = {"role": "sup-requirements", "title": "Req", "mock": {"dispatch": [w], "write": {"docs/product/api.md": big}}}
+        self.hive("dispatch", "--brief", self.brief({"role": "mgr-product", "title": "D", "mock": {"dispatch": [sup]}}))
+        s = self.report("T0002-sup-requirements")
+        self.assertTrue(any("changed 100 lines itself" in r for r in s["failure_reasons"]), s["failure_reasons"])
+        small = {"role": "sup-requirements", "title": "Req2", "mock": {"dispatch": [{"role": "wrk-plan-parser", "title": "P2"}],
+                 "write": {"docs/product/fix.md": "one line\n"}}}
+        self.hive("dispatch", "--brief", self.brief({"role": "mgr-product", "title": "D2", "mock": {"dispatch": [small]}}), ok=True)
+
 
 if __name__ == "__main__":
     unittest.main()

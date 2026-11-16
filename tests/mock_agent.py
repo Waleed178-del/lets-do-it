@@ -63,6 +63,8 @@ for i, child in enumerate(mock.get("dispatch", [])):
     bdir = os.path.join(".hive", "briefs", task_id)
     os.makedirs(bdir, exist_ok=True)
     bpath = os.path.join(bdir, "%02d-%s-%d.json" % (i, child["role"], int(time.time() * 1000)))
+    child = dict(child)
+    child.setdefault("objective", "mock objective")
     json.dump(child, open(bpath, "w"))
     p = subprocess.run([sys.executable, os.environ["HIVE_ENGINE"], "dispatch", "--brief", bpath],
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

@@ -104,6 +104,7 @@ DEFAULT_CONFIG = {
     "require_delegation": True,
     "manager_writable": ["docs/summaries/**"],
     "supervisor_glue_max_files": 8,
+    "supervisor_glue_max_lines": 60,
     "approval_phases": [],
     "notify_command": None,
     "secrets_file": ".hive/secrets.env",
@@ -675,8 +676,9 @@ LEVEL_RULES = {
        "write is docs/summaries/<your role>.md. The engine fails a manager that edits any other file or dispatches no "
        "children.",
     2: "As a supervisor you break your area into worker sized tasks, dispatch workers, review their output and run "
-       "integration checks. You must dispatch at least one worker. You may make small glue fixes yourself (the engine "
-       "allows at most a handful of files). Real feature work goes to workers, however small.",
+       "integration checks. You must dispatch at least one worker, and every deliverable is produced by a worker. You may "
+       "make small glue fixes yourself (the engine allows a few files and about 60 changed lines in total). Writing a "
+       "document or feature yourself is worker work and fails your task.",
 }
 
 
@@ -982,7 +984,15 @@ def find_reusable(hive, bhash):
 def own_changes(hive, role_id, task_id, start_sha, tasks):
     """Files a commander changed itself: its checkpoint commits, commits it made despite the rules,
     and whatever is left uncommitted. Children's work arrives as hive(<role>) commits and is excluded."""
-    files = set()
+    files, lines = set(), 0
+
+    def numstat(out):
+        n = 0
+        for row in out.splitlines():
+            parts = row.split("\t")
+            if len(parts) >= 3:
+                n += sum(int(x) for x in parts[:2] if x.isdigit())
+        return n
     if start_sha:
         _, log = git(["log", "--format=%H%x09%s", "%s..HEAD" % start_sha], hive.workdir)
         for line in log.splitlines():
@@ -999,12 +1009,16 @@ def own_changes(hive, role_id, task_id, start_sha, tasks):
                 continue  # verified child work, merges
             _, names = git(["show", "--name-only", "--format=", sha], hive.workdir)
             files.update(n for n in names.splitlines() if n)
+            lines += numstat(git(["show", "--numstat", "--format=", sha], hive.workdir)[1])
+    lines += numstat(git(["diff", "--numstat", "HEAD"], hive.workdir)[1])
     _, st = git(["status", "--porcelain", "--untracked-files=all"], hive.workdir)
     for line in st.splitlines():
         name = line[3:].split(" -> ")[-1].strip().strip('"')
         if name:
             files.add(name)
-    return sorted(f for f in files if not f.startswith(".hive/"))
+            if line.startswith("??") and not name.startswith(".hive/"):
+                lines += read_text(os.path.join(hive.workdir, name)).count("\n")
+    return sorted(f for f in files if not f.startswith(".hive/")), lines
 
 
 # --------------------------------------------------------------------------- dispatch
@@ -1021,6 +1035,40 @@ def load_brief(args):
     if not isinstance(brief, dict) or not brief.get("role") or not brief.get("title"):
         die("brief must be a JSON object with at least 'role' and 'title'")
     return brief
+
+
+BAD_PATH_END = (":", ",", ";", ")", "(")
+
+
+def lint_brief(brief, cfg):
+    """Reject malformed briefs before any agent runs, so the commander fixes its own mistake."""
+    errs = []
+    if not isinstance(brief.get("objective"), str) or not brief["objective"].strip():
+        errs.append("'objective' must be a non empty string")
+    for key in ("inputs", "deliverables", "acceptance", "verify", "scope"):
+        v = brief.get(key)
+        if v is None:
+            continue
+        if not isinstance(v, list) or not all(isinstance(x, str) and x.strip() for x in v):
+            errs.append("'%s' must be a list of non empty strings" % key)
+    for g in brief.get("scope") or []:
+        if isinstance(g, str) and (re.search(r"\s", g) or g.endswith(BAD_PATH_END)):
+            errs.append("scope entry %r is not a clean path glob (whitespace or trailing punctuation)" % g)
+    for c in brief.get("verify") or []:
+        if not isinstance(c, str):
+            continue
+        for tok in c.split():
+            if "/" in tok and re.search(r"\.\w+[:,;]$", tok):
+                errs.append("verify command %r references %r, a path with trailing punctuation" % (c, tok))
+    for d in brief.get("deliverables") or []:
+        if isinstance(d, str) and re.fullmatch(r"[\w./-]+[:,;]", d.strip()):
+            errs.append("deliverable %r looks like a path with trailing punctuation" % d)
+    ms = cfg["model_selection"]
+    if brief.get("model") and brief["model"] not in set(ms.get("tiers", [])) | {m for v in ms.get("allowed", {}).values() for m in v}:
+        errs.append("unknown model suggestion %r" % brief["model"])
+    if brief.get("effort") and brief["effort"] not in ms.get("efforts", []):
+        errs.append("unknown effort %r (use %s)" % (brief["effort"], ", ".join(ms.get("efforts", []))))
+    return errs
 
 
 def install_abort_handlers():
@@ -1059,6 +1107,9 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
         die("depth guard: caller depth %d cannot launch level %d role '%s'" % (depth, role["level"], role["id"]))
     if not os.path.isdir(hive.state):
         die("no .hive directory. Run: hive.py init --plan <file>")
+    problems = lint_brief(brief, cfg)
+    if problems:
+        die("brief rejected before dispatch, fix it and dispatch again: " + "; ".join(problems))
 
     level_name = LEVEL_NAMES[role["level"]]
     task_id = hive.next_task_id(role["id"])
@@ -1192,7 +1243,8 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
             if role["level"] in (1, 2) and report["status"] == "PASS" and cfg.get("require_delegation", True):
                 if not brief.get("allow_no_children") and not actual_children:
                     reasons.append("commander dispatched no children: delegation to your direct reports is mandatory, even when the task looks small")
-                mine = [f for f in own_changes(hive, role["id"], task_id, start_sha, task_table(hive)) if not path_in_scope(f, ignore)]
+                own_files, own_lines = own_changes(hive, role["id"], task_id, start_sha, task_table(hive))
+                mine = [f for f in own_files if not path_in_scope(f, ignore)]
                 if role["level"] == 1:
                     direct = [f for f in mine if not path_in_scope(f, cfg.get("manager_writable") or [])]
                     if direct:
@@ -1200,6 +1252,9 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
                 elif len(mine) > int(cfg.get("supervisor_glue_max_files", 8)):
                     reasons.append("supervisor changed %d files itself (glue limit %s): give feature work to workers: %s" % (
                         len(mine), cfg.get("supervisor_glue_max_files"), mine[:15]))
+                elif mine and own_lines > int(cfg.get("supervisor_glue_max_lines", 60)):
+                    reasons.append("supervisor changed %d lines itself (glue limit %s lines): that is worker work, dispatch it: %s" % (
+                        own_lines, cfg.get("supervisor_glue_max_lines"), mine[:15]))
 
             if report["status"] == "BLOCKED":
                 final = "BLOCKED"
