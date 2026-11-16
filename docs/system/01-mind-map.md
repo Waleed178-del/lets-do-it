@@ -23,7 +23,7 @@ mindmap
         Quality
         Release
       Level 2 Supervisors 18
-      Level 3 Workers 62
+      Level 3 Workers 65
     Phases
       1 Discovery
         Requirements
@@ -46,6 +46,17 @@ mindmap
         CI and container
         Deploy config
         README
+    Model bidding
+      Agent bids per task
+        haiku bidder
+        cheapest model likely to pass
+      Policy per level
+        allowed models
+        max effort
+      User overrides
+        role level or all
+        project or global
+      Escalate on retry
     Engine hive.py
       Dispatch
         One headless claude process per task
@@ -58,6 +69,9 @@ mindmap
         Child status cross check
       Recovery
         Automatic retry with feedback
+        Passed children never redone
+        Resume injects completed work
+        Identical briefs reused if still green
         Corrective briefs by the parent
         Stash failed work
         Rollback to any task
@@ -65,6 +79,13 @@ mindmap
         Budget per dispatch
         Global spend ceiling
         Timeouts per level
+      Control
+        hive stop cascades
+        DEAD detection
+        Dashboard and watch
+        Notify hook
+        Secrets file
+        Lessons and retro
     Outputs
       Working repository
       One git commit per verified task
@@ -80,5 +101,7 @@ mindmap
 | Chain of command | Who does what? | [02 Chain of command](02-chain-of-command.md) |
 | Phases | In what order is the product built? | [03 Phase workflow](03-phase-workflow.md) |
 | Engine | How is every task run and checked? | [04 Dispatch lifecycle](04-dispatch-lifecycle.md), [05 Verification](05-verification-pipeline.md) |
+| Model bidding | Which model and effort does each agent use? | [10 Model bidding](10-model-bidding.md) |
 | Recovery and limits | What happens when something fails? | [07 Failure and escalation](07-failure-and-escalation.md) |
+| Control | How do I stop, resume, watch and feed secrets? | [11 Operations and control](11-operations-and-control.md) |
 | Outputs | What do I get at the end? | [08 State and artifacts](08-state-and-artifacts.md) |

@@ -26,7 +26,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A["1 Analyze<br/>brief, plan, blueprint, docs"] --> B["2 Decompose<br/>one outcome per task,<br/>disjoint scopes in parallel"]
-    B --> C["3 Write briefs<br/>.hive/briefs/ID/NN-role.json"]
+    B --> C["3 Write briefs<br/>.hive/briefs/ID/NN-role.json<br/>with model and effort suggestion"]
     C --> D["4 Dispatch<br/>dependency order,<br/>batch when independent"]
     D --> E["5 Verify<br/>open the files the child claims"]
     E --> F{"Child PASS<br/>and really correct?"}
@@ -42,8 +42,9 @@ flowchart TD
 |---|---|---|
 | Writes product code | Never | Small glue fixes in scope only |
 | Dispatches | Its supervisors | Its workers |
-| Default model | opus | sonnet |
+| Model | bids per task, allowed sonnet or opus | bids per task, allowed haiku, sonnet or opus |
 | Default retries by engine | 0 | 1 |
+| On retry | never redispatches children that passed | never redispatches children that passed |
 
 ## Worker (level 3)
 

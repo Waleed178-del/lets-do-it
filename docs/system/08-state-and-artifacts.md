@@ -21,8 +21,14 @@ flowchart TD
     H --> H9["gates.json"]
     H --> H10["wt/ temporary worktrees"]
     H --> H11["FINAL_REPORT.md"]
+    H --> H12["secrets.env<br/>your keys, passed as env, redacted in logs"]
+    H --> H13["lessons.json<br/>also ~/.hive/lessons.json"]
+    H --> H14["run/ID.json<br/>live process IDs for stop"]
+    H --> H15["RETRO.md"]
     DA --> O1["ownership.json<br/>who may change which paths"]
     DA --> O2["commands.json<br/>install, lint, test, build"]
+    DA --> O3["toolchain.json<br/>required tools and versions"]
+    Root --> GH["~/.hive/config.json<br/>your global defaults"]
 ```
 
 ## Data model
@@ -35,6 +41,8 @@ erDiagram
     TASK ||--o{ TASK : "parent_task of"
     TASK ||--|| BRIEF : "runs"
     TASK ||--|{ ATTEMPT : "has"
+    TASK ||--o| BID : "starts with"
+    ATTEMPT }o--|| MODEL_CHOICE : "runs on"
     TASK ||--|| REPORT : "produces"
     TASK }o--|| ROLE : "performed by"
     ROLE ||--o{ ROLE : "parent of"
@@ -85,6 +93,18 @@ erDiagram
         string phase
         bool passed
     }
+    BID {
+        string model
+        string effort
+        int complexity
+        string rationale
+        float cost_usd
+    }
+    MODEL_CHOICE {
+        string model
+        string effort
+        string source
+    }
 ```
 
 ## Ledger events
@@ -96,11 +116,14 @@ sequenceDiagram
     participant E as Engine
     participant L as ledger.jsonl
     E->>L: task_start (task_id, role, level, parent_task, start_sha)
-    loop each attempt
-        E->>L: attempt_start (attempt)
-        E->>L: attempt_end (self_status, final, cost_usd, reasons)
+    opt bid mode
+        E->>L: bid (model, effort, complexity, cost_usd)
     end
-    E->>L: task_end (status, cost_usd, duration_s)
+    loop each attempt
+        E->>L: attempt_start (attempt, model, effort, source)
+        E->>L: attempt_end (self_status, final, cost_usd, reasons, model)
+    end
+    E->>L: task_end (status, cost_usd, duration_s, brief_hash, reused_from)
     opt rollback
         E->>L: rollback (task_id, to)
     end
@@ -120,6 +143,9 @@ classDiagram
         +verify : list of shell commands
         +scope : list of globs, optional
         +notes : string
+        +model : suggestion
+        +effort : suggestion
+        +model_reason : string
     }
     class AgentReport {
         +status : PASS | FAIL | BLOCKED
@@ -138,6 +164,8 @@ classDiagram
         +files_changed
         +start_sha / end_sha / stash
         +accepted_child_failures
+        +model_selection per attempt
+        +prior_progress
         +cost_usd / duration_s
     }
     Brief --> AgentReport : agent executes

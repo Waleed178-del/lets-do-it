@@ -7,7 +7,7 @@ Failures are handled at the lowest level that can fix them, then escalate one le
 ```mermaid
 flowchart TD
     W["Worker attempt fails"] --> R1{"Engine retry left?<br/>default 1 for workers"}
-    R1 -->|yes| W2["Engine reruns worker<br/>with exact failure reasons<br/>and command output"]
+    R1 -->|yes| W2["Engine reruns worker one model tier<br/>and one effort level higher,<br/>with exact failure reasons and output"]
     W2 --> W
     R1 -->|no| S["Supervisor receives FAIL report"]
     S --> S1["Diagnose root cause<br/>from report and files"]
@@ -54,11 +54,14 @@ flowchart TD
         L2["Global ceiling<br/>max_total_usd"]
         L3["Wall clock timeout per level<br/>process group killed"]
         L4["Max 2 corrective briefs<br/>per task per level"]
+        L5["Escalation capped by<br/>level policy"]
     end
     subgraph Recovery
         R1["Failed work kept in<br/>git stash hive-failed:ID"]
         R2["start SHA recorded per task<br/>hive rollback ID --yes"]
-        R3["Resume: rerun /hive:build<br/>continues from first unpassed phase"]
+        R3["Resume: rerun /hive:build<br/>continues from first unpassed phase,<br/>managers told what already passed"]
+        R4["hive stop<br/>cascading abort of every level"]
+        R5["Lessons: first attempt failures<br/>injected into future prompts"]
     end
     Limits --> NoRunaway(["No runaway cost or infinite loops"])
     Recovery --> NoLoss(["No lost work, clean tree"])
@@ -74,8 +77,11 @@ sequenceDiagram
     U->>U: fix the blocker (add key, edit plan, raise budget)
     U->>O: /hive:build plan.md
     O->>E: hive status
-    E-->>O: task tree and gates.json
+    E-->>O: task tree, RUNNING or DEAD leftovers
+    O->>E: hive stop (clean leftovers)
     O->>O: find first phase without a passing gate
     O->>E: dispatch that phase's manager
-    Note over O,E: completed phases are committed and not redone
+    E->>E: find PASSED descendants of the interrupted run still in git
+    E-->>O: manager prompt includes "work already completed"
+    Note over O,E: completed phases and completed tasks are not redone
 ```

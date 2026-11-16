@@ -283,6 +283,74 @@ class FeatureTest(HiveCase):
             proc.wait(timeout=10)
             proc.stdout.close()
 
+    # ------------------------------------------------------------------ delegation enforcement
+
+    def enforce(self):
+        self.hive("config", "unset", "require_delegation", ok=True)
+        self.set_config(retries=NO_RETRY)
+
+    def test_delegation_is_on_by_default(self):
+        self.enforce()
+        cfg = json.loads(self.hive("config", "show", ok=True).stdout)
+        self.assertTrue(cfg["require_delegation"])
+
+    def test_commander_without_children_fails(self):
+        self.enforce()
+        p = self.hive("dispatch", "--brief", self.brief({"role": "mgr-product", "title": "Lazy"}))
+        self.assertEqual(p.returncode, 1)
+        self.assertTrue(any("dispatched no children" in r for r in json.loads(p.stdout)["failure_reasons"]))
+
+    def test_waiver_allows_review_only_task_and_is_reported(self):
+        self.enforce()
+        self.hive("dispatch", "--brief", self.brief({"role": "mgr-product", "title": "Review", "allow_no_children": True}), ok=True)
+        self.assertIn("Delegation waived", self.hive("report", ok=True).stdout)
+
+    def test_manager_editing_files_itself_fails(self):
+        self.enforce()
+        mgr = mgr_sup_wrk({"role": "wrk-plan-parser", "title": "P"})
+        mgr["mock"]["write"] = {"docs/product/requirements.md": "manager wrote this itself"}
+        p = self.hive("dispatch", "--brief", self.brief(mgr))
+        self.assertEqual(p.returncode, 1)
+        self.assertTrue(any("manager edited files directly" in r and "requirements.md" in r for r in json.loads(p.stdout)["failure_reasons"]))
+
+    def test_manager_summary_file_is_allowed(self):
+        self.enforce()
+        mgr = mgr_sup_wrk({"role": "wrk-plan-parser", "title": "P"})
+        mgr["scope"] = ["docs/**"]
+        mgr["mock"]["write"] = {"docs/summaries/mgr-product.md": "summary"}
+        self.hive("dispatch", "--brief", self.brief(mgr), ok=True)
+
+    def test_manager_edits_before_dispatch_are_attributed_via_checkpoint(self):
+        self.enforce()
+        w = {"role": "wrk-plan-parser", "title": "P"}
+        sup = {"role": "sup-requirements", "title": "Req", "mock": {"dispatch": [w]}}
+        mgr = {"role": "mgr-product", "title": "D", "mock": {"write": {"docs/product/sneaky.md": "x"}, "dispatch": [sup]}}
+        p = self.hive("dispatch", "--brief", self.brief(mgr))
+        self.assertTrue(any("sneaky.md" in r for r in json.loads(p.stdout)["failure_reasons"]))
+
+    def test_supervisor_glue_limit(self):
+        self.enforce()
+        self.hive("config", "set", "supervisor_glue_max_files", "2", ok=True)
+        w = {"role": "wrk-plan-parser", "title": "P"}
+        sup = {"role": "sup-requirements", "title": "Req", "mock": {"dispatch": [w], "write": {
+            "docs/product/a.md": "a", "docs/product/b.md": "b", "docs/product/c.md": "c"}}}
+        self.hive("dispatch", "--brief", self.brief({"role": "mgr-product", "title": "D", "mock": {"dispatch": [sup]}}))
+        s = self.report("T0002-sup-requirements")
+        self.assertTrue(any("glue limit 2" in r for r in s["failure_reasons"]))
+
+    def test_at_commands_verify_expands_from_commands_json(self):
+        b = {"role": "mgr-product", "title": "V", "verify": ["@commands:test"]}
+        p = self.hive("dispatch", "--brief", self.brief(b))
+        self.assertEqual(p.returncode, 1)  # commands.json missing
+        os.makedirs(os.path.join(self.dir, "docs", "architecture"))
+        dump({"test": "true", "build": "false"}, os.path.join(self.dir, "docs", "architecture", "commands.json"))
+        self.git("add", "-A"); self.git("commit", "-qm", "cmds")
+        b["title"] = "V2"
+        rep = json.loads(self.hive("dispatch", "--brief", self.brief(b), ok=True).stdout)
+        self.assertEqual(rep["verification"][0]["command"], "true")
+        b["verify"], b["title"] = ["@commands"], "V3"
+        self.assertEqual(self.hive("dispatch", "--brief", self.brief(b)).returncode, 1)  # build is false
+
 
 if __name__ == "__main__":
     unittest.main()

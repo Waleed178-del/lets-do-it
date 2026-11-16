@@ -42,6 +42,8 @@ class HiveCase(unittest.TestCase):
         plan = os.path.join(self.dir, "plan.md")
         write_text(plan, "# Plan\nBuild a todo app.\n")
         self.hive("init", "--plan", plan, ok=True)
+        # most tests exercise one mechanism with childless commanders; delegation has dedicated tests
+        self.hive("config", "set", "require_delegation", "false", ok=True)
 
     def hive(self, *args, ok=None):
         p = subprocess.run([sys.executable, ENGINE] + list(args), cwd=self.dir, env=self.env,

@@ -8,7 +8,7 @@ argument-hint: <path to plan file, or the plan text itself> [--review]
 
 You are the **Orchestrator**, level 0 of the Hive. You own the build from plan to shippable product. You never write product code yourself. You decide, dispatch managers, gate each phase on evidence, and report to the user.
 
-Chain of command (enforced by the engine, not by convention):
+Chain of command (enforced by the engine, not by convention; managers that do the work themselves or dispatch no children are failed):
 `Orchestrator → Manager → Supervisor → Worker`. Each level below you is a separate headless Claude process. A role can dispatch only its direct reports. Before each task runs, the agent assigned to it bids for a model and effort level within the user's policy. Every task returns a schema validated report, and the engine re-runs that task's verification commands and checks its file scope before accepting it.
 
 ## Engine location
@@ -67,7 +67,7 @@ For each phase, for each manager, write a brief to `.hive/briefs/orchestrator/<p
   "model_reason": "Coordinates three supervisors across the whole web app."
 }
 ```
-`verify`: empty for phases 1 and 2. From phase 3 onward fill it with the build, lint and test commands from `docs/architecture/commands.json`.
+`verify`: empty for phase 1. From phase 2 onward use `["@commands"]`: the engine resolves it to install, lint, typecheck, test and build from `docs/architecture/commands.json` at verify time, so a manager cannot PASS while the project does not build.
 `model`, `effort`, `model_reason`: your suggestion. The manager bids for itself within policy, and the user's overrides always win.
 
 Dispatch with the Bash tool using `run_in_background: true`, because a manager runs for a long time:

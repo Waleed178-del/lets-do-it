@@ -1,4 +1,4 @@
-# 02. Chain of Command (all 88 roles)
+# 02. Chain of Command (all 91 roles)
 
 Generated from `plugins/hive/skills/build/engine/roster.json`, the single source of truth. Regenerate after editing the roster with `python3 docs/system/generate_hierarchy.py`.
 
@@ -27,8 +27,8 @@ flowchart TD
 | 0 | Orchestrator | 1 |
 | 1 | Manager | 7 |
 | 2 | Supervisor | 18 |
-| 3 | Worker | 62 |
-| | **Total** | **88** |
+| 3 | Worker | 65 |
+| | **Total** | **91** |
 
 ## Product & Discovery Manager (`mgr-product`)
 
@@ -79,6 +79,7 @@ flowchart LR
     sup_system_design --> wrk_api_contract(["API Contract Designer"])
     sup_system_design --> wrk_ownership_mapper(["Ownership & Command Mapper"])
     mgr_architecture --> sup_scaffold["Scaffolding Supervisor"]
+    sup_scaffold --> wrk_env_provisioner(["Environment Provisioner"])
     sup_scaffold --> wrk_repo_scaffolder(["Repository Scaffolder"])
     sup_scaffold --> wrk_tooling_config(["Tooling Configurator"])
     sup_scaffold --> wrk_env_config(["Environment Configurator"])
@@ -87,7 +88,7 @@ flowchart LR
     classDef wrk fill:#ecfdf5,color:#064e3b,stroke:#059669
     class mgr_architecture mgr
     class sup_system_design,sup_scaffold sup
-    class wrk_stack_selector,wrk_data_modeler,wrk_api_contract,wrk_ownership_mapper,wrk_repo_scaffolder,wrk_tooling_config,wrk_env_config wrk
+    class wrk_stack_selector,wrk_data_modeler,wrk_api_contract,wrk_ownership_mapper,wrk_env_provisioner,wrk_repo_scaffolder,wrk_tooling_config,wrk_env_config wrk
 ```
 
 | Supervisor | Worker | Task |
@@ -95,7 +96,8 @@ flowchart LR
 | `sup-system-design` | `wrk-stack-selector` | Select languages, frameworks, database, hosting and mobile approach that fit the plan and record the decision with alternatives and tradeoffs. Prefer mainstream, well supported, current stable versions. |
 | `sup-system-design` | `wrk-data-modeler` | Design entities, fields, types, relations, indexes and constraints that serve every user story. Include an ER diagram in Mermaid. |
 | `sup-system-design` | `wrk-api-contract` | Specify every endpoint: method, path, auth, request and response schemas, status codes and error format. Write OpenAPI 3.1 YAML plus a readable summary. |
-| `sup-system-design` | `wrk-ownership-mapper` | Write ownership.json mapping every code owning Hive role ID to the path globs it may change (plus a _shared list), and commands.json with install, build, lint, typecheck, test, e2e and per platform commands for the chosen stack. |
+| `sup-system-design` | `wrk-ownership-mapper` | Write ownership.json mapping every code owning Hive role ID to the path globs it may change (plus _shared and _ignore lists), commands.json with install, build, lint, typecheck, test, e2e and per platform commands for the chosen stack, and toolchain.json listing every required tool as {bin, version_cmd, min, install_hint, optional}. |
+| `sup-scaffold` | `wrk-env-provisioner` | Make every tool in docs/architecture/toolchain.json available: detect what is installed, install missing tools non interactively with user level installers where possible (for example nvm, corepack, pipx, sdkman, the Android command line tools), and verify with `hive doctor --project`. Never use sudo unless it works without a password. Report BLOCKED with the exact install command when a tool needs elevated rights or a different operating system. |
 | `sup-scaffold` | `wrk-repo-scaffolder` | Generate the project skeleton exactly per stack.md and the ownership map directory layout, using official generators non interactively where they exist. |
 | `sup-scaffold` | `wrk-tooling-config` | Configure linting, formatting, type checking and the test runner, each with a script matching commands.json, plus one passing sample test. |
 | `sup-scaffold` | `wrk-env-config` | Implement typed configuration loading with validation, .env.example listing every variable with comments, and safe defaults for local development. |
@@ -195,7 +197,7 @@ flowchart LR
 
 ## Mobile Apps Manager (`mgr-mobile`)
 
-Deliver the requested native or cross platform mobile apps that consume the same API contract as the web app.
+Deliver the requested native or cross platform mobile apps that consume the same API contract as the web app. Prefer a cross platform stack (Expo / React Native) unless the plan demands native, because it can be verified on any host and shares the web API client.
 
 ```mermaid
 flowchart LR
@@ -245,12 +247,13 @@ flowchart LR
     sup_experience_audit --> wrk_a11y_auditor(["Accessibility Auditor"])
     sup_experience_audit --> wrk_performance_auditor(["Performance Auditor"])
     sup_experience_audit --> wrk_responsive_checker(["Responsive Layout Checker"])
+    sup_experience_audit --> wrk_visual_reviewer(["Visual Design Reviewer"])
     classDef mgr fill:#2563eb,color:#fff,stroke:#1e40af
     classDef sup fill:#7c3aed,color:#fff,stroke:#5b21b6
     classDef wrk fill:#ecfdf5,color:#064e3b,stroke:#059669
     class mgr_quality mgr
     class sup_testing,sup_security,sup_experience_audit sup
-    class wrk_unit_tester,wrk_integration_tester,wrk_e2e_tester,wrk_bug_fixer,wrk_dependency_auditor,wrk_secure_code_reviewer,wrk_secrets_scanner,wrk_a11y_auditor,wrk_performance_auditor,wrk_responsive_checker wrk
+    class wrk_unit_tester,wrk_integration_tester,wrk_e2e_tester,wrk_bug_fixer,wrk_dependency_auditor,wrk_secure_code_reviewer,wrk_secrets_scanner,wrk_a11y_auditor,wrk_performance_auditor,wrk_responsive_checker,wrk_visual_reviewer wrk
 ```
 
 | Supervisor | Worker | Task |
@@ -265,6 +268,7 @@ flowchart LR
 | `sup-experience-audit` | `wrk-a11y-auditor` | Audit core flows against WCAG 2.1 AA (automated axe checks plus manual keyboard and semantics review) and fix violations. |
 | `sup-experience-audit` | `wrk-performance-auditor` | Measure bundle size and page performance, remove waste, add lazy loading and caching, and report before and after numbers. |
 | `sup-experience-audit` | `wrk-responsive-checker` | Render every page at 360px, 768px and 1280px with Playwright screenshots, fix overflow and layout breakage. |
+| `sup-experience-audit` | `wrk-visual-reviewer` | Start the app, capture Playwright screenshots of every sitemap page at 360px, 768px and 1280px into docs/quality/screenshots/, open each image with the Read tool and judge it against docs/product/design-spec.md: hierarchy, spacing, alignment, contrast, typography, consistency, polish. Fix visual defects in code, re-capture, and write docs/quality/visual-review.md with before and after notes per page. |
 
 ## DevOps & Release Manager (`mgr-release`)
 
@@ -280,13 +284,14 @@ flowchart LR
     mgr_release --> sup_deploy_docs["Deployment & Docs Supervisor"]
     sup_deploy_docs --> wrk_deploy_config(["Deployment Configurator"])
     sup_deploy_docs --> wrk_observability(["Observability Engineer"])
+    sup_deploy_docs --> wrk_deployer(["Deployer"])
     sup_deploy_docs --> wrk_docs_writer(["Documentation Writer"])
     classDef mgr fill:#2563eb,color:#fff,stroke:#1e40af
     classDef sup fill:#7c3aed,color:#fff,stroke:#5b21b6
     classDef wrk fill:#ecfdf5,color:#064e3b,stroke:#059669
     class mgr_release mgr
     class sup_cicd,sup_deploy_docs sup
-    class wrk_ci_pipeline,wrk_containerizer,wrk_release_verifier,wrk_deploy_config,wrk_observability,wrk_docs_writer wrk
+    class wrk_ci_pipeline,wrk_containerizer,wrk_release_verifier,wrk_deploy_config,wrk_observability,wrk_deployer,wrk_docs_writer wrk
 ```
 
 | Supervisor | Worker | Task |
@@ -296,4 +301,5 @@ flowchart LR
 | `sup-cicd` | `wrk-release-verifier` | Build the production artifact, start it, and run a scripted smoke test against health and key pages. Report exact results. |
 | `sup-deploy-docs` | `wrk-deploy-config` | Write deployment configuration for the hosting target in stack.md and a step by step deploy guide in docs/release/deploy.md. |
 | `sup-deploy-docs` | `wrk-observability` | Add a health endpoint, structured logging, error reporting hooks and basic request metrics. |
+| `sup-deploy-docs` | `wrk-deployer` | Deploy the product to the hosting target in stack.md when its credentials are present in the environment (for example VERCEL_TOKEN, NETLIFY_AUTH_TOKEN, FLY_API_TOKEN, RENDER_API_KEY, EXPO_TOKEN for mobile builds), then verify the live URL with an HTTP check of the health endpoint and key pages. When credentials are absent, do not fake it: report the exact variables needed and the one command that will deploy once they are set. |
 | `sup-deploy-docs` | `wrk-docs-writer` | Write README.md (overview, prerequisites, setup, run, test, deploy, structure) and verify each command by running it. |

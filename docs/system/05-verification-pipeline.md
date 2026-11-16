@@ -13,7 +13,7 @@ flowchart TD
     C2 -->|no| F2["reason: verification failed<br/>command and exit code"]
     C2 -->|yes| D
     F2 --> D["Diff repo since start SHA<br/>committed, unstaged, untracked"]
-    D --> D2{"every file inside scope<br/>or the shared list?"}
+    D --> D2{"every file inside scope,<br/>a shared file at any depth,<br/>or generated output?"}
     D2 -->|no| F3["reason: scope violation<br/>list of files"]
     D2 -->|yes| E
     F3 --> E{"PASS with any<br/>deliverable done=false?"}
@@ -34,7 +34,7 @@ flowchart TD
 |---|---|---|---|
 | 1 | Schema | Rambling or missing reports | `--json-schema` plus engine parsing |
 | 2 | Verify commands | "Tests pass" claims that are false | Commands in the brief, run by the engine |
-| 3 | Scope | Agents editing other teams' files | `ownership.json` or brief scope |
+| 3 | Scope | Agents editing other teams' files | `ownership.json` or brief scope, shared and ignore lists |
 | 4 | Deliverables | PASS with admitted gaps | The agent's own deliverables list |
 | 5 | Child cross check | Commanders hiding child failures | `.hive/ledger.jsonl` |
 
@@ -51,7 +51,8 @@ flowchart TD
     C -->|no| D{"Any descendant<br/>has entries?"}
     D -->|yes| D1(["union of descendants' globs"])
     D -->|no| D2(["unrestricted<br/>only before phase 2 exists"])
-    A1 & B1 & C1 & D1 & D2 --> Plus["plus _shared list<br/>package.json, lockfiles, .env.example, ..."]
+    A1 & B1 & C1 & D1 & D2 --> Plus["plus _shared list, matched at any depth<br/>package.json, web/package.json, lockfiles, ..."]
+    Plus --> Ign["ignored entirely: generated output<br/>node_modules, dist, .next, coverage, build caches, plus _ignore"]
 ```
 
 ## Commander accountability

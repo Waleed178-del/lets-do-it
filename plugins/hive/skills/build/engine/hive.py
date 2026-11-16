@@ -101,6 +101,9 @@ DEFAULT_CONFIG = {
     "on_fail": "stash",
     "auto_commit": True,
     "reuse_verified_briefs": True,
+    "require_delegation": True,
+    "manager_writable": ["docs/summaries/**"],
+    "supervisor_glue_max_files": 8,
     "approval_phases": [],
     "notify_command": None,
     "secrets_file": ".hive/secrets.env",
@@ -667,11 +670,13 @@ def load_prompt(name):
 
 
 LEVEL_RULES = {
-    1: "As a manager you never write product code. You plan, write briefs for your supervisors, dispatch them, "
-       "audit their reports and integrate. Documentation you own (for example a phase summary) is the only thing "
-       "you may write directly.",
+    1: "As a manager you never create or edit project files yourself, however small the product is. You plan, write "
+       "briefs for your supervisors, dispatch them, audit their reports and run integration checks. The only file you may "
+       "write is docs/summaries/<your role>.md. The engine fails a manager that edits any other file or dispatches no "
+       "children.",
     2: "As a supervisor you break your area into worker sized tasks, dispatch workers, review their output and run "
-       "integration checks. You may make small glue fixes inside your scope yourself. Real feature work goes to workers.",
+       "integration checks. You must dispatch at least one worker. You may make small glue fixes yourself (the engine "
+       "allows at most a handful of files). Real feature work goes to workers, however small.",
 }
 
 
@@ -843,8 +848,28 @@ def normalize_report(rep):
     return rep
 
 
+def expand_verify(hive, commands):
+    """`@commands` or `@commands:install,test` expands to the project's commands.json entries at verify time."""
+    out = []
+    for c in commands or []:
+        if isinstance(c, str) and c.startswith("@commands"):
+            keys = c.split(":", 1)[1].split(",") if ":" in c else ["install", "lint", "typecheck", "test", "build"]
+            cmap = read_json(os.path.join(hive.workdir, "docs", "architecture", "commands.json"))
+            if not cmap:
+                out.append("echo 'hive: docs/architecture/commands.json is missing or invalid' >&2; exit 1")
+                continue
+            found = [cmap[k.strip()] for k in keys if isinstance(cmap.get(k.strip()), str) and cmap.get(k.strip())]
+            if not found:
+                out.append("echo 'hive: commands.json has none of %s' >&2; exit 1" % ",".join(keys))
+            out.extend(found)
+        else:
+            out.append(c)
+    return out
+
+
 def run_verify(hive, commands, timeout_s, extra_env=None):
     results = []
+    commands = expand_verify(hive, commands)
     env = dict(os.environ, CI="1")
     env.update(extra_env or {})
     redact = redactor(extra_env or {})
@@ -952,6 +977,34 @@ def find_reusable(hive, bhash):
             if rep and (not rep.get("end_sha") or is_ancestor(rep["end_sha"], hive.workdir)):
                 return rep
     return None
+
+
+def own_changes(hive, role_id, task_id, start_sha, tasks):
+    """Files a commander changed itself: its checkpoint commits, commits it made despite the rules,
+    and whatever is left uncommitted. Children's work arrives as hive(<role>) commits and is excluded."""
+    files = set()
+    if start_sha:
+        _, log = git(["log", "--format=%H%x09%s", "%s..HEAD" % start_sha], hive.workdir)
+        for line in log.splitlines():
+            if "\t" not in line:
+                continue
+            sha, subj = line.split("\t", 1)
+            m = re.match(r"hive\(checkpoint\): (?:work in progress by|before parallel batch by) (\S+)(?: before (T\d{4}-[\w-]+))?", subj)
+            if m:
+                if m.group(1) != role_id:
+                    continue
+                if m.group(2) and tasks.get(m.group(2), {}).get("parent_task") not in (task_id, None):
+                    continue
+            elif subj.startswith("hive("):
+                continue  # verified child work, merges
+            _, names = git(["show", "--name-only", "--format=", sha], hive.workdir)
+            files.update(n for n in names.splitlines() if n)
+    _, st = git(["status", "--porcelain", "--untracked-files=all"], hive.workdir)
+    for line in st.splitlines():
+        name = line[3:].split(" -> ")[-1].strip().strip('"')
+        if name:
+            files.add(name)
+    return sorted(f for f in files if not f.startswith(".hive/"))
 
 
 # --------------------------------------------------------------------------- dispatch
@@ -1136,6 +1189,17 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
                     reasons.append("report lists child %s which this task never dispatched" % c.get("task_id"))
                 elif str(c.get("status", "")).upper() != real["status"]:
                     reasons.append("report misstates child %s as %s, engine recorded %s" % (c["task_id"], c.get("status"), real["status"]))
+            if role["level"] in (1, 2) and report["status"] == "PASS" and cfg.get("require_delegation", True):
+                if not brief.get("allow_no_children") and not actual_children:
+                    reasons.append("commander dispatched no children: delegation to your direct reports is mandatory, even when the task looks small")
+                mine = [f for f in own_changes(hive, role["id"], task_id, start_sha, task_table(hive)) if not path_in_scope(f, ignore)]
+                if role["level"] == 1:
+                    direct = [f for f in mine if not path_in_scope(f, cfg.get("manager_writable") or [])]
+                    if direct:
+                        reasons.append("manager edited files directly instead of delegating: %s" % direct[:15])
+                elif len(mine) > int(cfg.get("supervisor_glue_max_files", 8)):
+                    reasons.append("supervisor changed %d files itself (glue limit %s): give feature work to workers: %s" % (
+                        len(mine), cfg.get("supervisor_glue_max_files"), mine[:15]))
 
             if report["status"] == "BLOCKED":
                 final = "BLOCKED"
@@ -1192,6 +1256,7 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
         "accepted_child_failures": [t["task_id"] for t in task_table(hive).values()
                                     if t.get("parent_task") == task_id and t["status"] in ("FAIL", "BLOCKED", "ABORTED", "DEAD")] if final == "PASS" else [],
         "model_selection": selections, "prior_progress": [p["task_id"] for p in prior],
+        "delegation_waived": bool(brief.get("allow_no_children")) and role["level"] in (1, 2),
         "verification": [{k: v[k] for k in ("command", "exit_code", "seconds")} for v in verification],
         "scope": scope, "scope_source": scope_source, "files_changed": files,
         "start_sha": start_sha, "end_sha": end_sha, "stash": stash_ref,
@@ -1390,6 +1455,10 @@ def final_report(hive):
             md.append("")
         for t in dead:
             md.append("* DEAD `%s` (%s): its process ended without reporting. Re-dispatch or run `hive stop` to clean up." % (t["task_id"], t.get("role")))
+    waived = [r for r in reports.values() if r.get("delegation_waived")]
+    if waived:
+        md += ["", "## Delegation waived", ""]
+        md += ["* `%s` (%s) ran without children because its brief set allow_no_children" % (r["task_id"], r.get("role")) for r in waived]
     overrides = [r for r in reports.values() if r.get("accepted_child_failures")]
     if overrides:
         md += ["", "## Commander overrides (PASS accepted despite failed children)", ""]
