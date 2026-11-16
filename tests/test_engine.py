@@ -31,11 +31,14 @@ def load(path):
         return json.load(fh)
 
 
-class HiveTest(unittest.TestCase):
+class HiveCase(unittest.TestCase):
+    """Shared fixture: a fresh initialized project per test. Holds no tests itself."""
     def setUp(self):
         self.dir = tempfile.mkdtemp(prefix="hive-test-")
         self.env = {k: v for k, v in os.environ.items() if not k.startswith("HIVE_")}
         self.env["HIVE_MOCK_AGENT"] = MOCK
+        self.global_dir = tempfile.mkdtemp(prefix="hive-global-")
+        self.env["HIVE_GLOBAL_DIR"] = self.global_dir
         plan = os.path.join(self.dir, "plan.md")
         write_text(plan, "# Plan\nBuild a todo app.\n")
         self.hive("init", "--plan", plan, ok=True)
@@ -61,12 +64,12 @@ class HiveTest(unittest.TestCase):
         cfg.update(kw)
         dump(cfg, path)
 
-    # -----------------------------------------------------------------------------------------
 
+class HiveTest(HiveCase):
     def test_roster_is_valid_and_sized(self):
         out = json.loads(self.hive("validate", ok=True).stdout)
         self.assertTrue(out["valid"], out["errors"])
-        self.assertEqual(out["counts"], {"orchestrator": 1, "manager": 7, "supervisor": 18, "worker": 62, "total": 88})
+        self.assertEqual(out["counts"], {"orchestrator": 1, "manager": 7, "supervisor": 18, "worker": 65, "total": 91})
 
     def test_orchestrator_cannot_skip_levels(self):
         p = self.hive("dispatch", "--brief", self.brief({"role": "wrk-plan-parser", "title": "x"}))

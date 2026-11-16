@@ -1,213 +1,1239 @@
 {
   "version": 1,
-  "levels": {"0": "orchestrator", "1": "manager", "2": "supervisor", "3": "worker"},
+  "levels": {
+    "0": "orchestrator",
+    "1": "manager",
+    "2": "supervisor",
+    "3": "worker"
+  },
   "roles": [
     {
-      "id": "orchestrator", "level": 0, "parent": null,
+      "id": "orchestrator",
+      "level": 0,
+      "parent": null,
       "title": "Hive Orchestrator",
       "mission": "Owns the whole build. Converts the user's plan into a blueprint, runs the phases in order, dispatches managers, gates every phase on verified evidence, and delivers the final report."
     },
-
     {
-      "id": "mgr-product", "level": 1, "parent": "orchestrator", "phase": "1-discovery",
+      "id": "mgr-product",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "1-discovery",
       "title": "Product & Discovery Manager",
       "mission": "Turn the raw plan into an unambiguous, testable product specification and UX definition that every downstream team can build against without guessing.",
-      "deliverables": ["docs/product/requirements.md", "docs/product/user-stories.md", "docs/product/acceptance-criteria.md", "docs/product/sitemap.md", "docs/product/user-flows.md", "docs/product/design-spec.md", "docs/product/copy.md"],
-      "done_when": ["Every feature in the plan maps to at least one user story with acceptance criteria", "Every page or screen in the sitemap has a defined flow, content and states", "Open questions are listed with the assumption taken"],
-      "scope": ["docs/product/**"]
+      "deliverables": [
+        "docs/product/requirements.md",
+        "docs/product/user-stories.md",
+        "docs/product/acceptance-criteria.md",
+        "docs/product/sitemap.md",
+        "docs/product/user-flows.md",
+        "docs/product/design-spec.md",
+        "docs/product/copy.md"
+      ],
+      "done_when": [
+        "Every feature in the plan maps to at least one user story with acceptance criteria",
+        "Every page or screen in the sitemap has a defined flow, content and states",
+        "Open questions are listed with the assumption taken"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
     },
     {
-      "id": "mgr-architecture", "level": 1, "parent": "orchestrator", "phase": "2-architecture",
+      "id": "mgr-architecture",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "2-architecture",
       "title": "Architecture & Foundations Manager",
       "mission": "Choose the stack, define the data model and API contract, scaffold a repository that installs, builds and tests green, and publish the ownership map and command map every later dispatch depends on.",
-      "deliverables": ["docs/architecture/stack.md", "docs/architecture/data-model.md", "docs/architecture/api-contract.md", "docs/architecture/ownership.json", "docs/architecture/commands.json", "a scaffolded repository that builds"],
-      "done_when": ["commands.json install, build, lint and test commands all exit 0 on the scaffold", "ownership.json assigns path globs to every code owning supervisor and worker", "Stack decisions are recorded as ADRs with tradeoffs"],
-      "scope": ["**"]
+      "deliverables": [
+        "docs/architecture/stack.md",
+        "docs/architecture/data-model.md",
+        "docs/architecture/api-contract.md",
+        "docs/architecture/ownership.json",
+        "docs/architecture/commands.json",
+        "docs/architecture/toolchain.json",
+        "a scaffolded repository that builds"
+      ],
+      "done_when": [
+        "commands.json install, build, lint and test commands all exit 0 on the scaffold",
+        "ownership.json assigns path globs to every code owning supervisor and worker",
+        "Stack decisions are recorded as ADRs with tradeoffs",
+        "hive doctor --project reports every required tool present"
+      ],
+      "scope": [
+        "**"
+      ]
     },
     {
-      "id": "mgr-backend", "level": 1, "parent": "orchestrator", "phase": "3-build",
+      "id": "mgr-backend",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "3-build",
       "title": "Backend & Data Manager",
       "mission": "Deliver the server side: persistence, API, authentication and third party integrations, exactly matching the API contract, with tests.",
-      "deliverables": ["database schema and migrations", "API endpoints matching docs/architecture/api-contract.md", "authentication and authorization", "integrations required by the plan", "backend tests"],
-      "done_when": ["Every endpoint in the contract is implemented and covered by at least one test", "Build, lint and test commands exit 0"],
-      "scope": ["@ownership"]
+      "deliverables": [
+        "database schema and migrations",
+        "API endpoints matching docs/architecture/api-contract.md",
+        "authentication and authorization",
+        "integrations required by the plan",
+        "backend tests"
+      ],
+      "done_when": [
+        "Every endpoint in the contract is implemented and covered by at least one test",
+        "Build, lint and test commands exit 0"
+      ],
+      "scope": [
+        "@ownership"
+      ]
     },
     {
-      "id": "mgr-frontend", "level": 1, "parent": "orchestrator", "phase": "3-build",
+      "id": "mgr-frontend",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "3-build",
       "title": "Web Frontend Manager",
       "mission": "Deliver the complete web user interface: design system, every page in the sitemap, client state and API wiring, responsive and accessible.",
-      "deliverables": ["design tokens and component library", "every page in docs/product/sitemap.md", "API client wired to the real backend", "frontend tests"],
-      "done_when": ["Every sitemap page renders with real data paths and all states (loading, empty, error)", "Build, lint and test commands exit 0"],
-      "scope": ["@ownership"]
+      "deliverables": [
+        "design tokens and component library",
+        "every page in docs/product/sitemap.md",
+        "API client wired to the real backend",
+        "frontend tests"
+      ],
+      "done_when": [
+        "Every sitemap page renders with real data paths and all states (loading, empty, error)",
+        "Build, lint and test commands exit 0"
+      ],
+      "scope": [
+        "@ownership"
+      ]
     },
     {
-      "id": "mgr-mobile", "level": 1, "parent": "orchestrator", "phase": "3-build", "conditional": "platforms includes android or ios",
+      "id": "mgr-mobile",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "3-build",
+      "conditional": "platforms includes android or ios",
       "title": "Mobile Apps Manager",
-      "mission": "Deliver the requested native or cross platform mobile apps that consume the same API contract as the web app.",
-      "deliverables": ["Android app (if requested)", "iOS app (if requested)", "shared API client and models", "mobile tests"],
-      "done_when": ["Each requested app compiles or typechecks with the commands in commands.json", "Every mobile screen in the sitemap exists and is wired to the API"],
-      "scope": ["@ownership"]
+      "mission": "Deliver the requested native or cross platform mobile apps that consume the same API contract as the web app. Prefer a cross platform stack (Expo / React Native) unless the plan demands native, because it can be verified on any host and shares the web API client.",
+      "deliverables": [
+        "Android app (if requested)",
+        "iOS app (if requested)",
+        "shared API client and models",
+        "mobile tests"
+      ],
+      "done_when": [
+        "Each requested app compiles or typechecks with the commands in commands.json",
+        "Every mobile screen in the sitemap exists and is wired to the API"
+      ],
+      "scope": [
+        "@ownership"
+      ]
     },
     {
-      "id": "mgr-quality", "level": 1, "parent": "orchestrator", "phase": "4-quality",
+      "id": "mgr-quality",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "4-quality",
       "title": "Quality & Security Manager",
       "mission": "Prove the product works and is safe: test coverage across levels, security review, accessibility, performance and responsiveness, and fix what fails.",
-      "deliverables": ["unit, integration and end to end tests", "docs/quality/security-report.md", "docs/quality/a11y-performance-report.md", "fixes for every defect found or a documented waiver"],
-      "done_when": ["All tests pass", "No high or critical security findings remain open", "Every acceptance criterion is traced to a passing test or a documented manual check"],
-      "scope": ["**"]
+      "deliverables": [
+        "unit, integration and end to end tests",
+        "docs/quality/security-report.md",
+        "docs/quality/a11y-performance-report.md",
+        "fixes for every defect found or a documented waiver"
+      ],
+      "done_when": [
+        "All tests pass",
+        "No high or critical security findings remain open",
+        "Every acceptance criterion is traced to a passing test or a documented manual check",
+        "hive trace passes: every AC ID is referenced in docs/quality/traceability.md with an existing test file or the word manual"
+      ],
+      "scope": [
+        "**"
+      ]
     },
     {
-      "id": "mgr-release", "level": 1, "parent": "orchestrator", "phase": "5-release",
+      "id": "mgr-release",
+      "level": 1,
+      "parent": "orchestrator",
+      "phase": "5-release",
       "title": "DevOps & Release Manager",
       "mission": "Make the product shippable: CI pipeline, containerization, deployment configuration, observability, and documentation a new engineer can follow.",
-      "deliverables": ["CI workflow", "Dockerfile or platform deploy config", "README.md with run, test and deploy steps", "docs/release/deploy.md"],
-      "done_when": ["A fresh clone can install, build and test by following README.md exactly", "CI configuration is syntactically valid and runs the same commands as commands.json"],
-      "scope": ["**"]
+      "deliverables": [
+        "CI workflow",
+        "Dockerfile or platform deploy config",
+        "README.md with run, test and deploy steps",
+        "docs/release/deploy.md",
+        "a live deployment verified by HTTP check when hosting credentials are provided"
+      ],
+      "done_when": [
+        "A fresh clone can install, build and test by following README.md exactly",
+        "CI configuration is syntactically valid and runs the same commands as commands.json"
+      ],
+      "scope": [
+        "**"
+      ]
     },
-
-    {"id": "sup-requirements", "level": 2, "parent": "mgr-product", "title": "Requirements Supervisor",
-     "mission": "Produce the requirements set: parsed plan, user stories, acceptance criteria, scope and risk register.",
-     "deliverables": ["docs/product/requirements.md", "docs/product/user-stories.md", "docs/product/acceptance-criteria.md", "docs/product/risks.md"],
-     "done_when": ["Traceability: every plan item has a story ID and every story has testable criteria"], "scope": ["docs/product/**"]},
-    {"id": "sup-ux", "level": 2, "parent": "mgr-product", "title": "UX Definition Supervisor",
-     "mission": "Produce the experience definition: information architecture, user flows, visual design spec and product copy.",
-     "deliverables": ["docs/product/sitemap.md", "docs/product/user-flows.md", "docs/product/design-spec.md", "docs/product/copy.md"],
-     "done_when": ["Every page has purpose, sections, states and copy"], "scope": ["docs/product/**"]},
-
-    {"id": "sup-system-design", "level": 2, "parent": "mgr-architecture", "title": "System Design Supervisor",
-     "mission": "Decide the stack and specify the data model, API contract, ADRs, ownership map and command map.",
-     "deliverables": ["docs/architecture/stack.md", "docs/architecture/data-model.md", "docs/architecture/api-contract.md", "docs/architecture/adr/*.md", "docs/architecture/ownership.json", "docs/architecture/commands.json"],
-     "done_when": ["API contract covers every user story that needs server data", "ownership.json globs do not overlap between sibling workers unless intended"], "scope": ["docs/architecture/**"]},
-    {"id": "sup-scaffold", "level": 2, "parent": "mgr-architecture", "title": "Scaffolding Supervisor",
-     "mission": "Create the repository skeleton, tooling and environment configuration so install, build, lint and test pass on an empty app.",
-     "deliverables": ["project skeleton per stack.md", "lint, format, typecheck and test tooling", ".env.example and config loading"],
-     "done_when": ["Every command in commands.json exits 0"], "scope": ["**"]},
-
-    {"id": "sup-data", "level": 2, "parent": "mgr-backend", "title": "Data Layer Supervisor",
-     "mission": "Implement the persistence layer exactly as specified in data-model.md.", "deliverables": ["schema and migrations", "seed data", "repository or data access layer with tests"],
-     "done_when": ["Migrations apply cleanly from zero", "Data access tests pass"], "scope": ["@ownership"]},
-    {"id": "sup-api", "level": 2, "parent": "mgr-backend", "title": "API Supervisor",
-     "mission": "Implement every endpoint in api-contract.md with validation, consistent errors and documentation.", "deliverables": ["endpoints", "input validation", "error handling", "API reference docs"],
-     "done_when": ["Every contract endpoint exists and has a passing test"], "scope": ["@ownership"]},
-    {"id": "sup-auth", "level": 2, "parent": "mgr-backend", "title": "Auth & Access Supervisor",
-     "mission": "Implement authentication, authorization and session security.", "deliverables": ["sign up, sign in, sign out, password reset as required", "role based access control", "secure session or token handling"],
-     "done_when": ["Protected routes reject unauthenticated and unauthorized requests in tests"], "scope": ["@ownership"]},
-    {"id": "sup-integrations", "level": 2, "parent": "mgr-backend", "title": "Integrations Supervisor",
-     "mission": "Implement the third party integrations the plan requires behind clean adapters with test doubles.", "deliverables": ["payments, email, storage or other adapters as required", "env vars documented in .env.example"],
-     "done_when": ["Each adapter has a test using a fake or sandbox", "The app runs with integrations disabled when keys are absent"], "scope": ["@ownership"]},
-
-    {"id": "sup-ui-system", "level": 2, "parent": "mgr-frontend", "title": "UI System Supervisor",
-     "mission": "Implement design tokens, the reusable component library, the app shell and assets.", "deliverables": ["tokens", "components with states", "layout shell with navigation", "icons and static assets"],
-     "done_when": ["Components cover every pattern used in design-spec.md", "Build passes"], "scope": ["@ownership"]},
-    {"id": "sup-pages", "level": 2, "parent": "mgr-frontend", "title": "Pages Supervisor",
-     "mission": "Implement every page in the sitemap with forms, content and SEO metadata.", "deliverables": ["one route per sitemap entry", "forms with validation", "final copy", "meta tags, sitemap.xml, robots.txt"],
-     "done_when": ["Every sitemap entry resolves to a rendered route"], "scope": ["@ownership"]},
-    {"id": "sup-client-state", "level": 2, "parent": "mgr-frontend", "title": "Client State & Data Supervisor",
-     "mission": "Implement client state, the typed API client and route protection.", "deliverables": ["state management", "API client generated from or matching the contract", "auth aware routing"],
-     "done_when": ["Pages consume the API client, not hardcoded data", "Protected routes redirect correctly"], "scope": ["@ownership"]},
-
-    {"id": "sup-android", "level": 2, "parent": "mgr-mobile", "title": "Android Supervisor",
-     "mission": "Deliver the Android app (native Kotlin or the cross platform stack chosen in stack.md).", "deliverables": ["project scaffold", "screens", "data layer"],
-     "done_when": ["Android build or typecheck command in commands.json exits 0"], "scope": ["@ownership"]},
-    {"id": "sup-ios", "level": 2, "parent": "mgr-mobile", "title": "iOS Supervisor",
-     "mission": "Deliver the iOS app (native Swift or the cross platform stack chosen in stack.md).", "deliverables": ["project scaffold", "screens", "data layer"],
-     "done_when": ["iOS build or typecheck command in commands.json exits 0, or on non macOS hosts the cross platform typecheck passes and the limitation is reported"], "scope": ["@ownership"]},
-
-    {"id": "sup-testing", "level": 2, "parent": "mgr-quality", "title": "Testing Supervisor",
-     "mission": "Raise test coverage across unit, integration and end to end levels and drive fixes for every failure.", "deliverables": ["tests mapped to acceptance criteria", "docs/quality/traceability.md", "bug fixes"],
-     "done_when": ["Full test suite passes", "Every acceptance criterion maps to a test or a documented manual check"], "scope": ["**"]},
-    {"id": "sup-security", "level": 2, "parent": "mgr-quality", "title": "Security Supervisor",
-     "mission": "Find and fix security weaknesses in dependencies, code and secret handling.", "deliverables": ["docs/quality/security-report.md", "fixes for high and critical findings"],
-     "done_when": ["No open high or critical findings"], "scope": ["**"]},
-    {"id": "sup-experience-audit", "level": 2, "parent": "mgr-quality", "title": "Accessibility & Performance Supervisor",
-     "mission": "Audit and fix accessibility, performance and responsive behavior.", "deliverables": ["docs/quality/a11y-performance-report.md", "fixes"],
-     "done_when": ["No WCAG 2.1 AA blockers on core flows", "No layout breakage at 360px, 768px and 1280px"], "scope": ["**"]},
-
-    {"id": "sup-cicd", "level": 2, "parent": "mgr-release", "title": "CI/CD Supervisor",
-     "mission": "Create the CI pipeline, container build and a release smoke test.", "deliverables": ["CI workflow", "Dockerfile and .dockerignore where applicable", "smoke test script"],
-     "done_when": ["CI file is valid YAML running commands.json steps", "Production build succeeds locally"], "scope": ["**"]},
-    {"id": "sup-deploy-docs", "level": 2, "parent": "mgr-release", "title": "Deployment & Docs Supervisor",
-     "mission": "Write deployment configuration, operational observability and complete documentation.", "deliverables": ["deploy config", "README.md", "docs/release/deploy.md", "logging and health check"],
-     "done_when": ["README steps were executed and work"], "scope": ["**"]},
-
-    {"id": "wrk-plan-parser", "level": 3, "parent": "sup-requirements", "title": "Plan Parser", "mission": "Extract every feature, constraint, persona, platform and non functional requirement from .hive/plan.md into a numbered requirements list with IDs (REQ-001...).", "deliverables": ["docs/product/requirements.md"], "scope": ["docs/product/**"]},
-    {"id": "wrk-user-stories", "level": 3, "parent": "sup-requirements", "title": "User Story Writer", "mission": "Write user stories (US-001...) in the form As a, I want, so that, each linked to its REQ IDs and prioritized MoSCoW.", "deliverables": ["docs/product/user-stories.md"], "scope": ["docs/product/**"]},
-    {"id": "wrk-acceptance-criteria", "level": 3, "parent": "sup-requirements", "title": "Acceptance Criteria Writer", "mission": "Write Given When Then acceptance criteria (AC-001...) for every user story, each one objectively testable.", "deliverables": ["docs/product/acceptance-criteria.md"], "scope": ["docs/product/**"]},
-    {"id": "wrk-scope-risk", "level": 3, "parent": "sup-requirements", "title": "Scope & Risk Analyst", "mission": "Record scope boundaries, assumptions taken for ambiguous points, dependencies and a risk register with mitigations.", "deliverables": ["docs/product/risks.md"], "scope": ["docs/product/**"]},
-
-    {"id": "wrk-sitemap-ia", "level": 3, "parent": "sup-ux", "title": "Information Architect", "mission": "Define the sitemap and screen inventory per platform: every page or screen, its route, purpose, sections, data needed and access level.", "deliverables": ["docs/product/sitemap.md"], "scope": ["docs/product/**"]},
-    {"id": "wrk-user-flows", "level": 3, "parent": "sup-ux", "title": "User Flow Designer", "mission": "Document step by step flows for every primary task including error, empty and loading states, as Mermaid diagrams plus text.", "deliverables": ["docs/product/user-flows.md"], "scope": ["docs/product/**"]},
-    {"id": "wrk-design-spec", "level": 3, "parent": "sup-ux", "title": "Visual Design Specifier", "mission": "Specify the visual system: palette with contrast ratios, typography scale, spacing, radii, elevation, breakpoints and component patterns.", "deliverables": ["docs/product/design-spec.md"], "scope": ["docs/product/**"]},
-    {"id": "wrk-copywriter", "level": 3, "parent": "sup-ux", "title": "Product Copywriter", "mission": "Write final copy for every page: headings, body, CTAs, form labels, validation and error messages, empty states and emails.", "deliverables": ["docs/product/copy.md"], "scope": ["docs/product/**"]},
-
-    {"id": "wrk-stack-selector", "level": 3, "parent": "sup-system-design", "title": "Stack Selector", "mission": "Select languages, frameworks, database, hosting and mobile approach that fit the plan and record the decision with alternatives and tradeoffs. Prefer mainstream, well supported, current stable versions.", "deliverables": ["docs/architecture/stack.md", "docs/architecture/adr/0001-stack.md"], "scope": ["docs/architecture/**"]},
-    {"id": "wrk-data-modeler", "level": 3, "parent": "sup-system-design", "title": "Data Modeler", "mission": "Design entities, fields, types, relations, indexes and constraints that serve every user story. Include an ER diagram in Mermaid.", "deliverables": ["docs/architecture/data-model.md"], "scope": ["docs/architecture/**"]},
-    {"id": "wrk-api-contract", "level": 3, "parent": "sup-system-design", "title": "API Contract Designer", "mission": "Specify every endpoint: method, path, auth, request and response schemas, status codes and error format. Write OpenAPI 3.1 YAML plus a readable summary.", "deliverables": ["docs/architecture/api-contract.md", "docs/architecture/openapi.yaml"], "scope": ["docs/architecture/**"]},
-    {"id": "wrk-ownership-mapper", "level": 3, "parent": "sup-system-design", "title": "Ownership & Command Mapper", "mission": "Write ownership.json mapping every code owning Hive role ID to the path globs it may change (plus a _shared list), and commands.json with install, build, lint, typecheck, test, e2e and per platform commands for the chosen stack.", "deliverables": ["docs/architecture/ownership.json", "docs/architecture/commands.json"], "scope": ["docs/architecture/**"]},
-
-    {"id": "wrk-repo-scaffolder", "level": 3, "parent": "sup-scaffold", "title": "Repository Scaffolder", "mission": "Generate the project skeleton exactly per stack.md and the ownership map directory layout, using official generators non interactively where they exist.", "deliverables": ["project skeleton"], "scope": ["**"]},
-    {"id": "wrk-tooling-config", "level": 3, "parent": "sup-scaffold", "title": "Tooling Configurator", "mission": "Configure linting, formatting, type checking and the test runner, each with a script matching commands.json, plus one passing sample test.", "deliverables": ["tool configs", "package scripts or equivalents"], "scope": ["**"]},
-    {"id": "wrk-env-config", "level": 3, "parent": "sup-scaffold", "title": "Environment Configurator", "mission": "Implement typed configuration loading with validation, .env.example listing every variable with comments, and safe defaults for local development.", "deliverables": [".env.example", "config module"], "scope": ["**"]},
-
-    {"id": "wrk-schema-migrator", "level": 3, "parent": "sup-data", "title": "Schema & Migration Engineer", "mission": "Implement the schema and migrations from data-model.md, with indexes and constraints, applying cleanly from an empty database.", "scope": ["@ownership"]},
-    {"id": "wrk-seed-data", "level": 3, "parent": "sup-data", "title": "Seed Data Engineer", "mission": "Create idempotent seed scripts with realistic development data covering every entity and edge case needed by the UI.", "scope": ["@ownership"]},
-    {"id": "wrk-repository-layer", "level": 3, "parent": "sup-data", "title": "Data Access Engineer", "mission": "Implement the repository or data access layer for every entity with unit tests against a test database or in memory equivalent.", "scope": ["@ownership"]},
-
-    {"id": "wrk-endpoint-builder", "level": 3, "parent": "sup-api", "title": "Endpoint Builder", "mission": "Implement the assigned endpoints exactly per api-contract.md with tests for success and failure paths.", "scope": ["@ownership"]},
-    {"id": "wrk-validation", "level": 3, "parent": "sup-api", "title": "Input Validation Engineer", "mission": "Add schema based input validation to every endpoint with precise error messages and tests for invalid input.", "scope": ["@ownership"]},
-    {"id": "wrk-error-handling", "level": 3, "parent": "sup-api", "title": "Error Handling Engineer", "mission": "Implement a consistent error model, central error handler, structured logging of failures and 404 and 500 handling, with tests.", "scope": ["@ownership"]},
-    {"id": "wrk-api-docs", "level": 3, "parent": "sup-api", "title": "API Documentation Engineer", "mission": "Serve or generate API reference docs from the implemented API and verify they match openapi.yaml.", "scope": ["@ownership"]},
-
-    {"id": "wrk-auth-flow", "level": 3, "parent": "sup-auth", "title": "Authentication Engineer", "mission": "Implement the required authentication flows with salted hashing or a vetted provider, email verification and reset where required, with tests.", "scope": ["@ownership"]},
-    {"id": "wrk-rbac", "level": 3, "parent": "sup-auth", "title": "Authorization Engineer", "mission": "Implement roles, permissions and ownership checks on every protected resource, with tests that prove denial.", "scope": ["@ownership"]},
-    {"id": "wrk-session-security", "level": 3, "parent": "sup-auth", "title": "Session Security Engineer", "mission": "Harden sessions or tokens: secure cookies, expiry, rotation, CSRF protection, rate limiting on auth endpoints and security headers.", "scope": ["@ownership"]},
-
-    {"id": "wrk-payments", "level": 3, "parent": "sup-integrations", "title": "Payments Integrator", "mission": "Integrate the payment provider behind an adapter with webhook signature verification and idempotency, tested with a fake.", "scope": ["@ownership"]},
-    {"id": "wrk-email-notify", "level": 3, "parent": "sup-integrations", "title": "Email & Notifications Integrator", "mission": "Implement transactional email and notifications behind an adapter with templates from copy.md and a console transport for development.", "scope": ["@ownership"]},
-    {"id": "wrk-file-storage", "level": 3, "parent": "sup-integrations", "title": "File Storage Integrator", "mission": "Implement file upload and storage behind an adapter with type and size validation and a local disk driver for development.", "scope": ["@ownership"]},
-    {"id": "wrk-third-party", "level": 3, "parent": "sup-integrations", "title": "Third Party API Integrator", "mission": "Integrate any other external API the plan requires behind an adapter with timeouts, retries and a fake for tests.", "scope": ["@ownership"]},
-
-    {"id": "wrk-design-tokens", "level": 3, "parent": "sup-ui-system", "title": "Design Token Engineer", "mission": "Implement design-spec.md as code level tokens (CSS variables or theme config) including light and dark modes if specified.", "scope": ["@ownership"]},
-    {"id": "wrk-component-builder", "level": 3, "parent": "sup-ui-system", "title": "Component Builder", "mission": "Build the assigned reusable components with all variants and states, keyboard support and ARIA, plus tests.", "scope": ["@ownership"]},
-    {"id": "wrk-layout-shell", "level": 3, "parent": "sup-ui-system", "title": "Layout Shell Engineer", "mission": "Build the app shell: header, navigation, footer, responsive layout grid and error boundary.", "scope": ["@ownership"]},
-    {"id": "wrk-assets", "level": 3, "parent": "sup-ui-system", "title": "Icon & Asset Engineer", "mission": "Set up the icon system, favicon set, logo placeholder and optimized image handling.", "scope": ["@ownership"]},
-
-    {"id": "wrk-page-builder", "level": 3, "parent": "sup-pages", "title": "Page Builder", "mission": "Build the assigned pages from sitemap.md using the component library, with loading, empty and error states.", "scope": ["@ownership"]},
-    {"id": "wrk-form-builder", "level": 3, "parent": "sup-pages", "title": "Form Builder", "mission": "Build the assigned forms with client validation matching server validation, accessible errors and submit states.", "scope": ["@ownership"]},
-    {"id": "wrk-content-integrator", "level": 3, "parent": "sup-pages", "title": "Content Integrator", "mission": "Place final copy from copy.md into every page and remove all placeholder text.", "scope": ["@ownership"]},
-    {"id": "wrk-seo-meta", "level": 3, "parent": "sup-pages", "title": "SEO Engineer", "mission": "Add titles, descriptions, Open Graph tags, canonical URLs, sitemap.xml, robots.txt and structured data where relevant.", "scope": ["@ownership"]},
-
-    {"id": "wrk-state-manager", "level": 3, "parent": "sup-client-state", "title": "State Management Engineer", "mission": "Implement client and server state management with caching and invalidation per the chosen stack.", "scope": ["@ownership"]},
-    {"id": "wrk-api-client", "level": 3, "parent": "sup-client-state", "title": "API Client Engineer", "mission": "Implement a typed API client that matches openapi.yaml, handles auth and errors uniformly, and is shared with mobile when the stack allows.", "scope": ["@ownership"]},
-    {"id": "wrk-routing-guard", "level": 3, "parent": "sup-client-state", "title": "Routing & Guard Engineer", "mission": "Implement routing, route guards for authenticated and role restricted pages, and redirects, with tests.", "scope": ["@ownership"]},
-
-    {"id": "wrk-android-scaffold", "level": 3, "parent": "sup-android", "title": "Android Scaffolder", "mission": "Scaffold the Android project per stack.md with build configuration, theming from design-spec.md and navigation.", "scope": ["@ownership"]},
-    {"id": "wrk-android-screens", "level": 3, "parent": "sup-android", "title": "Android Screen Builder", "mission": "Build the assigned Android screens with all states, following platform conventions.", "scope": ["@ownership"]},
-    {"id": "wrk-android-data", "level": 3, "parent": "sup-android", "title": "Android Data Engineer", "mission": "Implement the Android networking, persistence and auth token storage wired to the API contract.", "scope": ["@ownership"]},
-
-    {"id": "wrk-ios-scaffold", "level": 3, "parent": "sup-ios", "title": "iOS Scaffolder", "mission": "Scaffold the iOS project per stack.md with build configuration, theming from design-spec.md and navigation.", "scope": ["@ownership"]},
-    {"id": "wrk-ios-screens", "level": 3, "parent": "sup-ios", "title": "iOS Screen Builder", "mission": "Build the assigned iOS screens with all states, following Human Interface Guidelines.", "scope": ["@ownership"]},
-    {"id": "wrk-ios-data", "level": 3, "parent": "sup-ios", "title": "iOS Data Engineer", "mission": "Implement the iOS networking, persistence and Keychain token storage wired to the API contract.", "scope": ["@ownership"]},
-
-    {"id": "wrk-unit-tester", "level": 3, "parent": "sup-testing", "title": "Unit Test Engineer", "mission": "Write unit tests for untested logic in the assigned area, targeting behavior from acceptance-criteria.md.", "scope": ["**"]},
-    {"id": "wrk-integration-tester", "level": 3, "parent": "sup-testing", "title": "Integration Test Engineer", "mission": "Write integration tests across API, database and auth for the assigned flows.", "scope": ["**"]},
-    {"id": "wrk-e2e-tester", "level": 3, "parent": "sup-testing", "title": "End to End Test Engineer", "mission": "Write end to end browser tests (Playwright) for the assigned user flows against a locally started app.", "scope": ["**"]},
-    {"id": "wrk-bug-fixer", "level": 3, "parent": "sup-testing", "title": "Bug Fixer", "mission": "Reproduce the assigned failing test or defect, find the root cause, fix it at the source and prove the fix with a test. Never weaken or skip a test to make it pass.", "scope": ["**"]},
-
-    {"id": "wrk-dependency-auditor", "level": 3, "parent": "sup-security", "title": "Dependency Auditor", "mission": "Run the ecosystem audit tool, upgrade or replace vulnerable dependencies, and record residual findings.", "scope": ["**"]},
-    {"id": "wrk-secure-code-reviewer", "level": 3, "parent": "sup-security", "title": "Secure Code Reviewer", "mission": "Review the code for OWASP Top 10 issues (injection, broken access control, XSS, SSRF, insecure deserialization, misconfiguration) and fix confirmed findings with tests.", "scope": ["**"]},
-    {"id": "wrk-secrets-scanner", "level": 3, "parent": "sup-security", "title": "Secrets Scanner", "mission": "Scan the repository and git history for committed secrets and unsafe config, move values to environment variables and update .env.example.", "scope": ["**"]},
-
-    {"id": "wrk-a11y-auditor", "level": 3, "parent": "sup-experience-audit", "title": "Accessibility Auditor", "mission": "Audit core flows against WCAG 2.1 AA (automated axe checks plus manual keyboard and semantics review) and fix violations.", "scope": ["**"]},
-    {"id": "wrk-performance-auditor", "level": 3, "parent": "sup-experience-audit", "title": "Performance Auditor", "mission": "Measure bundle size and page performance, remove waste, add lazy loading and caching, and report before and after numbers.", "scope": ["**"]},
-    {"id": "wrk-responsive-checker", "level": 3, "parent": "sup-experience-audit", "title": "Responsive Layout Checker", "mission": "Render every page at 360px, 768px and 1280px with Playwright screenshots, fix overflow and layout breakage.", "scope": ["**"]},
-
-    {"id": "wrk-ci-pipeline", "level": 3, "parent": "sup-cicd", "title": "CI Pipeline Engineer", "mission": "Write the CI workflow (GitHub Actions by default) that installs, lints, typechecks, tests and builds with caching.", "scope": ["**"]},
-    {"id": "wrk-containerizer", "level": 3, "parent": "sup-cicd", "title": "Containerization Engineer", "mission": "Write a multi stage Dockerfile, .dockerignore and docker compose for local services, running as a non root user.", "scope": ["**"]},
-    {"id": "wrk-release-verifier", "level": 3, "parent": "sup-cicd", "title": "Release Smoke Verifier", "mission": "Build the production artifact, start it, and run a scripted smoke test against health and key pages. Report exact results.", "scope": ["**"]},
-
-    {"id": "wrk-deploy-config", "level": 3, "parent": "sup-deploy-docs", "title": "Deployment Configurator", "mission": "Write deployment configuration for the hosting target in stack.md and a step by step deploy guide in docs/release/deploy.md.", "scope": ["**"]},
-    {"id": "wrk-observability", "level": 3, "parent": "sup-deploy-docs", "title": "Observability Engineer", "mission": "Add a health endpoint, structured logging, error reporting hooks and basic request metrics.", "scope": ["**"]},
-    {"id": "wrk-docs-writer", "level": 3, "parent": "sup-deploy-docs", "title": "Documentation Writer", "mission": "Write README.md (overview, prerequisites, setup, run, test, deploy, structure) and verify each command by running it.", "scope": ["**"]}
+    {
+      "id": "sup-requirements",
+      "level": 2,
+      "parent": "mgr-product",
+      "title": "Requirements Supervisor",
+      "mission": "Produce the requirements set: parsed plan, user stories, acceptance criteria, scope and risk register.",
+      "deliverables": [
+        "docs/product/requirements.md",
+        "docs/product/user-stories.md",
+        "docs/product/acceptance-criteria.md",
+        "docs/product/risks.md"
+      ],
+      "done_when": [
+        "Traceability: every plan item has a story ID and every story has testable criteria"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "sup-ux",
+      "level": 2,
+      "parent": "mgr-product",
+      "title": "UX Definition Supervisor",
+      "mission": "Produce the experience definition: information architecture, user flows, visual design spec and product copy.",
+      "deliverables": [
+        "docs/product/sitemap.md",
+        "docs/product/user-flows.md",
+        "docs/product/design-spec.md",
+        "docs/product/copy.md"
+      ],
+      "done_when": [
+        "Every page has purpose, sections, states and copy"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "sup-system-design",
+      "level": 2,
+      "parent": "mgr-architecture",
+      "title": "System Design Supervisor",
+      "mission": "Decide the stack and specify the data model, API contract, ADRs, ownership map and command map.",
+      "deliverables": [
+        "docs/architecture/stack.md",
+        "docs/architecture/data-model.md",
+        "docs/architecture/api-contract.md",
+        "docs/architecture/adr/*.md",
+        "docs/architecture/ownership.json",
+        "docs/architecture/commands.json",
+        "docs/architecture/toolchain.json"
+      ],
+      "done_when": [
+        "API contract covers every user story that needs server data",
+        "ownership.json globs do not overlap between sibling workers unless intended"
+      ],
+      "scope": [
+        "docs/architecture/**"
+      ]
+    },
+    {
+      "id": "sup-scaffold",
+      "level": 2,
+      "parent": "mgr-architecture",
+      "title": "Scaffolding Supervisor",
+      "mission": "Provision the toolchain, then create the repository skeleton, tooling and environment configuration so install, build, lint and test pass on an empty app.",
+      "deliverables": [
+        "every required tool in toolchain.json installed or a precise BLOCKED report",
+        "project skeleton per stack.md",
+        "lint, format, typecheck and test tooling",
+        ".env.example and config loading"
+      ],
+      "done_when": [
+        "Every command in commands.json exits 0"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "sup-data",
+      "level": 2,
+      "parent": "mgr-backend",
+      "title": "Data Layer Supervisor",
+      "mission": "Implement the persistence layer exactly as specified in data-model.md.",
+      "deliverables": [
+        "schema and migrations",
+        "seed data",
+        "repository or data access layer with tests"
+      ],
+      "done_when": [
+        "Migrations apply cleanly from zero",
+        "Data access tests pass"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-api",
+      "level": 2,
+      "parent": "mgr-backend",
+      "title": "API Supervisor",
+      "mission": "Implement every endpoint in api-contract.md with validation, consistent errors and documentation.",
+      "deliverables": [
+        "endpoints",
+        "input validation",
+        "error handling",
+        "API reference docs"
+      ],
+      "done_when": [
+        "Every contract endpoint exists and has a passing test"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-auth",
+      "level": 2,
+      "parent": "mgr-backend",
+      "title": "Auth & Access Supervisor",
+      "mission": "Implement authentication, authorization and session security.",
+      "deliverables": [
+        "sign up, sign in, sign out, password reset as required",
+        "role based access control",
+        "secure session or token handling"
+      ],
+      "done_when": [
+        "Protected routes reject unauthenticated and unauthorized requests in tests"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-integrations",
+      "level": 2,
+      "parent": "mgr-backend",
+      "title": "Integrations Supervisor",
+      "mission": "Implement the third party integrations the plan requires behind clean adapters with test doubles.",
+      "deliverables": [
+        "payments, email, storage or other adapters as required",
+        "env vars documented in .env.example"
+      ],
+      "done_when": [
+        "Each adapter has a test using a fake or sandbox",
+        "The app runs with integrations disabled when keys are absent"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-ui-system",
+      "level": 2,
+      "parent": "mgr-frontend",
+      "title": "UI System Supervisor",
+      "mission": "Implement design tokens, the reusable component library, the app shell and assets.",
+      "deliverables": [
+        "tokens",
+        "components with states",
+        "layout shell with navigation",
+        "icons and static assets"
+      ],
+      "done_when": [
+        "Components cover every pattern used in design-spec.md",
+        "Build passes"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-pages",
+      "level": 2,
+      "parent": "mgr-frontend",
+      "title": "Pages Supervisor",
+      "mission": "Implement every page in the sitemap with forms, content and SEO metadata.",
+      "deliverables": [
+        "one route per sitemap entry",
+        "forms with validation",
+        "final copy",
+        "meta tags, sitemap.xml, robots.txt"
+      ],
+      "done_when": [
+        "Every sitemap entry resolves to a rendered route"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-client-state",
+      "level": 2,
+      "parent": "mgr-frontend",
+      "title": "Client State & Data Supervisor",
+      "mission": "Implement client state, the typed API client and route protection.",
+      "deliverables": [
+        "state management",
+        "API client generated from or matching the contract",
+        "auth aware routing"
+      ],
+      "done_when": [
+        "Pages consume the API client, not hardcoded data",
+        "Protected routes redirect correctly"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-android",
+      "level": 2,
+      "parent": "mgr-mobile",
+      "title": "Android Supervisor",
+      "mission": "Deliver the Android app (native Kotlin or the cross platform stack chosen in stack.md).",
+      "deliverables": [
+        "project scaffold",
+        "screens",
+        "data layer"
+      ],
+      "done_when": [
+        "The Android build command in commands.json exits 0 (Gradle assembleDebug for native, or expo export --platform android plus a typecheck for Expo)"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-ios",
+      "level": 2,
+      "parent": "mgr-mobile",
+      "title": "iOS Supervisor",
+      "mission": "Deliver the iOS app (native Swift or the cross platform stack chosen in stack.md).",
+      "deliverables": [
+        "project scaffold",
+        "screens",
+        "data layer"
+      ],
+      "done_when": [
+        "On macOS: xcodebuild or the Expo prebuild plus build succeeds. On Linux or Windows: expo export --platform ios and the typecheck pass, and the report states that a native iOS compile was not possible on this host"
+      ],
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "sup-testing",
+      "level": 2,
+      "parent": "mgr-quality",
+      "title": "Testing Supervisor",
+      "mission": "Raise test coverage across unit, integration and end to end levels and drive fixes for every failure. Maintain docs/quality/traceability.md as a table with one row per AC ID: | AC-001 | `path/to/test.file` | automated | (or manual with the steps). The engine checks every AC ID and every referenced path.",
+      "deliverables": [
+        "tests mapped to acceptance criteria",
+        "docs/quality/traceability.md",
+        "bug fixes"
+      ],
+      "done_when": [
+        "Full test suite passes",
+        "Every acceptance criterion maps to a test or a documented manual check"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "sup-security",
+      "level": 2,
+      "parent": "mgr-quality",
+      "title": "Security Supervisor",
+      "mission": "Find and fix security weaknesses in dependencies, code and secret handling.",
+      "deliverables": [
+        "docs/quality/security-report.md",
+        "fixes for high and critical findings"
+      ],
+      "done_when": [
+        "No open high or critical findings"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "sup-experience-audit",
+      "level": 2,
+      "parent": "mgr-quality",
+      "title": "Accessibility & Performance Supervisor",
+      "mission": "Audit and fix accessibility, performance and responsive behavior.",
+      "deliverables": [
+        "docs/quality/a11y-performance-report.md",
+        "fixes",
+        "docs/quality/visual-review.md with screenshots"
+      ],
+      "done_when": [
+        "No WCAG 2.1 AA blockers on core flows",
+        "No layout breakage at 360px, 768px and 1280px"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "sup-cicd",
+      "level": 2,
+      "parent": "mgr-release",
+      "title": "CI/CD Supervisor",
+      "mission": "Create the CI pipeline, container build and a release smoke test.",
+      "deliverables": [
+        "CI workflow",
+        "Dockerfile and .dockerignore where applicable",
+        "smoke test script"
+      ],
+      "done_when": [
+        "CI file is valid YAML running commands.json steps",
+        "Production build succeeds locally"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "sup-deploy-docs",
+      "level": 2,
+      "parent": "mgr-release",
+      "title": "Deployment & Docs Supervisor",
+      "mission": "Write deployment configuration, operational observability and complete documentation.",
+      "deliverables": [
+        "deploy config",
+        "README.md",
+        "docs/release/deploy.md",
+        "logging and health check",
+        "live deployment when credentials exist"
+      ],
+      "done_when": [
+        "README steps were executed and work"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-plan-parser",
+      "level": 3,
+      "parent": "sup-requirements",
+      "title": "Plan Parser",
+      "mission": "Extract every feature, constraint, persona, platform and non functional requirement from .hive/plan.md into a numbered requirements list with IDs (REQ-001...).",
+      "deliverables": [
+        "docs/product/requirements.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-user-stories",
+      "level": 3,
+      "parent": "sup-requirements",
+      "title": "User Story Writer",
+      "mission": "Write user stories (US-001...) in the form As a, I want, so that, each linked to its REQ IDs and prioritized MoSCoW.",
+      "deliverables": [
+        "docs/product/user-stories.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-acceptance-criteria",
+      "level": 3,
+      "parent": "sup-requirements",
+      "title": "Acceptance Criteria Writer",
+      "mission": "Write Given When Then acceptance criteria (AC-001...) for every user story, each one objectively testable.",
+      "deliverables": [
+        "docs/product/acceptance-criteria.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-scope-risk",
+      "level": 3,
+      "parent": "sup-requirements",
+      "title": "Scope & Risk Analyst",
+      "mission": "Record scope boundaries, assumptions taken for ambiguous points, dependencies and a risk register with mitigations.",
+      "deliverables": [
+        "docs/product/risks.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-sitemap-ia",
+      "level": 3,
+      "parent": "sup-ux",
+      "title": "Information Architect",
+      "mission": "Define the sitemap and screen inventory per platform: every page or screen, its route, purpose, sections, data needed and access level.",
+      "deliverables": [
+        "docs/product/sitemap.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-user-flows",
+      "level": 3,
+      "parent": "sup-ux",
+      "title": "User Flow Designer",
+      "mission": "Document step by step flows for every primary task including error, empty and loading states, as Mermaid diagrams plus text.",
+      "deliverables": [
+        "docs/product/user-flows.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-design-spec",
+      "level": 3,
+      "parent": "sup-ux",
+      "title": "Visual Design Specifier",
+      "mission": "Specify the visual system: palette with contrast ratios, typography scale, spacing, radii, elevation, breakpoints and component patterns.",
+      "deliverables": [
+        "docs/product/design-spec.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-copywriter",
+      "level": 3,
+      "parent": "sup-ux",
+      "title": "Product Copywriter",
+      "mission": "Write final copy for every page: headings, body, CTAs, form labels, validation and error messages, empty states and emails.",
+      "deliverables": [
+        "docs/product/copy.md"
+      ],
+      "scope": [
+        "docs/product/**"
+      ]
+    },
+    {
+      "id": "wrk-stack-selector",
+      "level": 3,
+      "parent": "sup-system-design",
+      "title": "Stack Selector",
+      "mission": "Select languages, frameworks, database, hosting and mobile approach that fit the plan and record the decision with alternatives and tradeoffs. Prefer mainstream, well supported, current stable versions.",
+      "deliverables": [
+        "docs/architecture/stack.md",
+        "docs/architecture/adr/0001-stack.md"
+      ],
+      "scope": [
+        "docs/architecture/**"
+      ]
+    },
+    {
+      "id": "wrk-data-modeler",
+      "level": 3,
+      "parent": "sup-system-design",
+      "title": "Data Modeler",
+      "mission": "Design entities, fields, types, relations, indexes and constraints that serve every user story. Include an ER diagram in Mermaid.",
+      "deliverables": [
+        "docs/architecture/data-model.md"
+      ],
+      "scope": [
+        "docs/architecture/**"
+      ]
+    },
+    {
+      "id": "wrk-api-contract",
+      "level": 3,
+      "parent": "sup-system-design",
+      "title": "API Contract Designer",
+      "mission": "Specify every endpoint: method, path, auth, request and response schemas, status codes and error format. Write OpenAPI 3.1 YAML plus a readable summary.",
+      "deliverables": [
+        "docs/architecture/api-contract.md",
+        "docs/architecture/openapi.yaml"
+      ],
+      "scope": [
+        "docs/architecture/**"
+      ]
+    },
+    {
+      "id": "wrk-ownership-mapper",
+      "level": 3,
+      "parent": "sup-system-design",
+      "title": "Ownership & Command Mapper",
+      "mission": "Write ownership.json mapping every code owning Hive role ID to the path globs it may change (plus _shared and _ignore lists), commands.json with install, build, lint, typecheck, test, e2e and per platform commands for the chosen stack, and toolchain.json listing every required tool as {bin, version_cmd, min, install_hint, optional}.",
+      "deliverables": [
+        "docs/architecture/ownership.json",
+        "docs/architecture/commands.json",
+        "docs/architecture/toolchain.json"
+      ],
+      "scope": [
+        "docs/architecture/**"
+      ]
+    },
+    {
+      "id": "wrk-env-provisioner",
+      "level": 3,
+      "parent": "sup-scaffold",
+      "title": "Environment Provisioner",
+      "mission": "Make every tool in docs/architecture/toolchain.json available: detect what is installed, install missing tools non interactively with user level installers where possible (for example nvm, corepack, pipx, sdkman, the Android command line tools), and verify with `hive doctor --project`. Never use sudo unless it works without a password. Report BLOCKED with the exact install command when a tool needs elevated rights or a different operating system.",
+      "deliverables": [
+        "all required tools present per hive doctor --project",
+        "docs/architecture/environment.md recording what was installed and how"
+      ],
+      "scope": [
+        "docs/architecture/environment.md",
+        ".tool-versions",
+        ".nvmrc",
+        ".node-version",
+        ".python-version"
+      ]
+    },
+    {
+      "id": "wrk-repo-scaffolder",
+      "level": 3,
+      "parent": "sup-scaffold",
+      "title": "Repository Scaffolder",
+      "mission": "Generate the project skeleton exactly per stack.md and the ownership map directory layout, using official generators non interactively where they exist.",
+      "deliverables": [
+        "project skeleton"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-tooling-config",
+      "level": 3,
+      "parent": "sup-scaffold",
+      "title": "Tooling Configurator",
+      "mission": "Configure linting, formatting, type checking and the test runner, each with a script matching commands.json, plus one passing sample test.",
+      "deliverables": [
+        "tool configs",
+        "package scripts or equivalents"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-env-config",
+      "level": 3,
+      "parent": "sup-scaffold",
+      "title": "Environment Configurator",
+      "mission": "Implement typed configuration loading with validation, .env.example listing every variable with comments, and safe defaults for local development.",
+      "deliverables": [
+        ".env.example",
+        "config module"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-schema-migrator",
+      "level": 3,
+      "parent": "sup-data",
+      "title": "Schema & Migration Engineer",
+      "mission": "Implement the schema and migrations from data-model.md, with indexes and constraints, applying cleanly from an empty database.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-seed-data",
+      "level": 3,
+      "parent": "sup-data",
+      "title": "Seed Data Engineer",
+      "mission": "Create idempotent seed scripts with realistic development data covering every entity and edge case needed by the UI.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-repository-layer",
+      "level": 3,
+      "parent": "sup-data",
+      "title": "Data Access Engineer",
+      "mission": "Implement the repository or data access layer for every entity with unit tests against a test database or in memory equivalent.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-endpoint-builder",
+      "level": 3,
+      "parent": "sup-api",
+      "title": "Endpoint Builder",
+      "mission": "Implement the assigned endpoints exactly per api-contract.md with tests for success and failure paths.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-validation",
+      "level": 3,
+      "parent": "sup-api",
+      "title": "Input Validation Engineer",
+      "mission": "Add schema based input validation to every endpoint with precise error messages and tests for invalid input.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-error-handling",
+      "level": 3,
+      "parent": "sup-api",
+      "title": "Error Handling Engineer",
+      "mission": "Implement a consistent error model, central error handler, structured logging of failures and 404 and 500 handling, with tests.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-api-docs",
+      "level": 3,
+      "parent": "sup-api",
+      "title": "API Documentation Engineer",
+      "mission": "Serve or generate API reference docs from the implemented API and verify they match openapi.yaml.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-auth-flow",
+      "level": 3,
+      "parent": "sup-auth",
+      "title": "Authentication Engineer",
+      "mission": "Implement the required authentication flows with salted hashing or a vetted provider, email verification and reset where required, with tests.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-rbac",
+      "level": 3,
+      "parent": "sup-auth",
+      "title": "Authorization Engineer",
+      "mission": "Implement roles, permissions and ownership checks on every protected resource, with tests that prove denial.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-session-security",
+      "level": 3,
+      "parent": "sup-auth",
+      "title": "Session Security Engineer",
+      "mission": "Harden sessions or tokens: secure cookies, expiry, rotation, CSRF protection, rate limiting on auth endpoints and security headers.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-payments",
+      "level": 3,
+      "parent": "sup-integrations",
+      "title": "Payments Integrator",
+      "mission": "Integrate the payment provider behind an adapter with webhook signature verification and idempotency, tested with a fake.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-email-notify",
+      "level": 3,
+      "parent": "sup-integrations",
+      "title": "Email & Notifications Integrator",
+      "mission": "Implement transactional email and notifications behind an adapter with templates from copy.md and a console transport for development.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-file-storage",
+      "level": 3,
+      "parent": "sup-integrations",
+      "title": "File Storage Integrator",
+      "mission": "Implement file upload and storage behind an adapter with type and size validation and a local disk driver for development.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-third-party",
+      "level": 3,
+      "parent": "sup-integrations",
+      "title": "Third Party API Integrator",
+      "mission": "Integrate any other external API the plan requires behind an adapter with timeouts, retries and a fake for tests.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-design-tokens",
+      "level": 3,
+      "parent": "sup-ui-system",
+      "title": "Design Token Engineer",
+      "mission": "Implement design-spec.md as code level tokens (CSS variables or theme config) including light and dark modes if specified.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-component-builder",
+      "level": 3,
+      "parent": "sup-ui-system",
+      "title": "Component Builder",
+      "mission": "Build the assigned reusable components with all variants and states, keyboard support and ARIA, plus tests.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-layout-shell",
+      "level": 3,
+      "parent": "sup-ui-system",
+      "title": "Layout Shell Engineer",
+      "mission": "Build the app shell: header, navigation, footer, responsive layout grid and error boundary.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-assets",
+      "level": 3,
+      "parent": "sup-ui-system",
+      "title": "Icon & Asset Engineer",
+      "mission": "Set up the icon system, favicon set, logo placeholder and optimized image handling.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-page-builder",
+      "level": 3,
+      "parent": "sup-pages",
+      "title": "Page Builder",
+      "mission": "Build the assigned pages from sitemap.md using the component library, with loading, empty and error states.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-form-builder",
+      "level": 3,
+      "parent": "sup-pages",
+      "title": "Form Builder",
+      "mission": "Build the assigned forms with client validation matching server validation, accessible errors and submit states.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-content-integrator",
+      "level": 3,
+      "parent": "sup-pages",
+      "title": "Content Integrator",
+      "mission": "Place final copy from copy.md into every page and remove all placeholder text.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-seo-meta",
+      "level": 3,
+      "parent": "sup-pages",
+      "title": "SEO Engineer",
+      "mission": "Add titles, descriptions, Open Graph tags, canonical URLs, sitemap.xml, robots.txt and structured data where relevant.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-state-manager",
+      "level": 3,
+      "parent": "sup-client-state",
+      "title": "State Management Engineer",
+      "mission": "Implement client and server state management with caching and invalidation per the chosen stack.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-api-client",
+      "level": 3,
+      "parent": "sup-client-state",
+      "title": "API Client Engineer",
+      "mission": "Implement a typed API client that matches openapi.yaml, handles auth and errors uniformly, and is shared with mobile when the stack allows.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-routing-guard",
+      "level": 3,
+      "parent": "sup-client-state",
+      "title": "Routing & Guard Engineer",
+      "mission": "Implement routing, route guards for authenticated and role restricted pages, and redirects, with tests.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-android-scaffold",
+      "level": 3,
+      "parent": "sup-android",
+      "title": "Android Scaffolder",
+      "mission": "Scaffold the Android project per stack.md with build configuration, theming from design-spec.md and navigation.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-android-screens",
+      "level": 3,
+      "parent": "sup-android",
+      "title": "Android Screen Builder",
+      "mission": "Build the assigned Android screens with all states, following platform conventions.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-android-data",
+      "level": 3,
+      "parent": "sup-android",
+      "title": "Android Data Engineer",
+      "mission": "Implement the Android networking, persistence and auth token storage wired to the API contract.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-ios-scaffold",
+      "level": 3,
+      "parent": "sup-ios",
+      "title": "iOS Scaffolder",
+      "mission": "Scaffold the iOS project per stack.md with build configuration, theming from design-spec.md and navigation.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-ios-screens",
+      "level": 3,
+      "parent": "sup-ios",
+      "title": "iOS Screen Builder",
+      "mission": "Build the assigned iOS screens with all states, following Human Interface Guidelines.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-ios-data",
+      "level": 3,
+      "parent": "sup-ios",
+      "title": "iOS Data Engineer",
+      "mission": "Implement the iOS networking, persistence and Keychain token storage wired to the API contract.",
+      "scope": [
+        "@ownership"
+      ]
+    },
+    {
+      "id": "wrk-unit-tester",
+      "level": 3,
+      "parent": "sup-testing",
+      "title": "Unit Test Engineer",
+      "mission": "Write unit tests for untested logic in the assigned area, targeting behavior from acceptance-criteria.md.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-integration-tester",
+      "level": 3,
+      "parent": "sup-testing",
+      "title": "Integration Test Engineer",
+      "mission": "Write integration tests across API, database and auth for the assigned flows.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-e2e-tester",
+      "level": 3,
+      "parent": "sup-testing",
+      "title": "End to End Test Engineer",
+      "mission": "Write end to end browser tests (Playwright) for the assigned user flows against a locally started app.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-bug-fixer",
+      "level": 3,
+      "parent": "sup-testing",
+      "title": "Bug Fixer",
+      "mission": "Reproduce the assigned failing test or defect, find the root cause, fix it at the source and prove the fix with a test. Never weaken or skip a test to make it pass.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-dependency-auditor",
+      "level": 3,
+      "parent": "sup-security",
+      "title": "Dependency Auditor",
+      "mission": "Run the ecosystem audit tool, upgrade or replace vulnerable dependencies, and record residual findings.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-secure-code-reviewer",
+      "level": 3,
+      "parent": "sup-security",
+      "title": "Secure Code Reviewer",
+      "mission": "Review the code for OWASP Top 10 issues (injection, broken access control, XSS, SSRF, insecure deserialization, misconfiguration) and fix confirmed findings with tests.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-secrets-scanner",
+      "level": 3,
+      "parent": "sup-security",
+      "title": "Secrets Scanner",
+      "mission": "Scan the repository and git history for committed secrets and unsafe config, move values to environment variables and update .env.example.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-a11y-auditor",
+      "level": 3,
+      "parent": "sup-experience-audit",
+      "title": "Accessibility Auditor",
+      "mission": "Audit core flows against WCAG 2.1 AA (automated axe checks plus manual keyboard and semantics review) and fix violations.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-performance-auditor",
+      "level": 3,
+      "parent": "sup-experience-audit",
+      "title": "Performance Auditor",
+      "mission": "Measure bundle size and page performance, remove waste, add lazy loading and caching, and report before and after numbers.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-responsive-checker",
+      "level": 3,
+      "parent": "sup-experience-audit",
+      "title": "Responsive Layout Checker",
+      "mission": "Render every page at 360px, 768px and 1280px with Playwright screenshots, fix overflow and layout breakage.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-visual-reviewer",
+      "level": 3,
+      "parent": "sup-experience-audit",
+      "title": "Visual Design Reviewer",
+      "mission": "Start the app, capture Playwright screenshots of every sitemap page at 360px, 768px and 1280px into docs/quality/screenshots/, open each image with the Read tool and judge it against docs/product/design-spec.md: hierarchy, spacing, alignment, contrast, typography, consistency, polish. Fix visual defects in code, re-capture, and write docs/quality/visual-review.md with before and after notes per page.",
+      "deliverables": [
+        "docs/quality/visual-review.md",
+        "docs/quality/screenshots/",
+        "visual fixes"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-ci-pipeline",
+      "level": 3,
+      "parent": "sup-cicd",
+      "title": "CI Pipeline Engineer",
+      "mission": "Write the CI workflow (GitHub Actions by default) that installs, lints, typechecks, tests and builds with caching.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-containerizer",
+      "level": 3,
+      "parent": "sup-cicd",
+      "title": "Containerization Engineer",
+      "mission": "Write a multi stage Dockerfile, .dockerignore and docker compose for local services, running as a non root user.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-release-verifier",
+      "level": 3,
+      "parent": "sup-cicd",
+      "title": "Release Smoke Verifier",
+      "mission": "Build the production artifact, start it, and run a scripted smoke test against health and key pages. Report exact results.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-deploy-config",
+      "level": 3,
+      "parent": "sup-deploy-docs",
+      "title": "Deployment Configurator",
+      "mission": "Write deployment configuration for the hosting target in stack.md and a step by step deploy guide in docs/release/deploy.md.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-observability",
+      "level": 3,
+      "parent": "sup-deploy-docs",
+      "title": "Observability Engineer",
+      "mission": "Add a health endpoint, structured logging, error reporting hooks and basic request metrics.",
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-deployer",
+      "level": 3,
+      "parent": "sup-deploy-docs",
+      "title": "Deployer",
+      "mission": "Deploy the product to the hosting target in stack.md when its credentials are present in the environment (for example VERCEL_TOKEN, NETLIFY_AUTH_TOKEN, FLY_API_TOKEN, RENDER_API_KEY, EXPO_TOKEN for mobile builds), then verify the live URL with an HTTP check of the health endpoint and key pages. When credentials are absent, do not fake it: report the exact variables needed and the one command that will deploy once they are set.",
+      "deliverables": [
+        "live URL verified by HTTP check, or the exact missing credentials and deploy command",
+        "docs/release/deploy.md updated with the result"
+      ],
+      "scope": [
+        "**"
+      ]
+    },
+    {
+      "id": "wrk-docs-writer",
+      "level": 3,
+      "parent": "sup-deploy-docs",
+      "title": "Documentation Writer",
+      "mission": "Write README.md (overview, prerequisites, setup, run, test, deploy, structure) and verify each command by running it.",
+      "scope": [
+        "**"
+      ]
+    }
   ]
 }

@@ -1,0 +1,49 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  engine:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.8", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Configure git identity for test repos
+        run: |
+          git config --global user.email ci@example.com
+          git config --global user.name CI
+      - name: Validate roster
+        run: python plugins/hive/skills/build/engine/hive.py validate
+      - name: Engine tests (mock agent, no API cost)
+        run: python -m unittest -v tests/test_engine.py tests/test_features.py
+      - name: Chain of command doc is up to date
+        run: |
+          python docs/system/generate_hierarchy.py
+          git diff --exit-code docs/system/02-chain-of-command.md
+  cli-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Check every CLI flag the engine depends on still exists
+        run: |
+          python3 - <<'PY'
+          import subprocess, sys
+          sys.path.insert(0, "plugins/hive/skills/build/engine")
+          import hive
+          out = subprocess.run(["claude", "--help"], capture_output=True, text=True).stdout
+          missing = [f for f in hive.REQUIRED_CLI_FLAGS if f not in out]
+          print("missing:", missing)
+          sys.exit(1 if missing else 0)
+          PY
