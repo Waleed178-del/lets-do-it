@@ -53,6 +53,10 @@ if attempt_retry:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         open(path, "w").write(content)
 
+if mock.get("git_commit"):
+    subprocess.run(["git", "add", "-A"], stdout=subprocess.DEVNULL)
+    subprocess.run(["git", "commit", "-qm", mock["git_commit"]], stdout=subprocess.DEVNULL)
+
 children, child_fail = [], False
 task_id = os.environ["HIVE_TASK_ID"]
 skip_passed = attempt_retry and mock.get("skip_passed_on_retry", True)

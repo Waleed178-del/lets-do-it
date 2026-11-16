@@ -419,9 +419,8 @@ def resolve_scope(hive, roster, role, brief):
     own = hive.ownership()
 
     def from_ownership(rid):
-        if rid in own and own[rid]:
-            return list(own[rid])
-        globs = []
+        # a commander answers for its whole subtree: its own entry plus every descendant's entry
+        globs = list(own.get(rid) or [])
         for d in roster.descendants(rid):
             globs.extend(own.get(d["id"]) or [])
         return globs
@@ -993,20 +992,21 @@ def own_changes(hive, role_id, task_id, start_sha, tasks):
             if len(parts) >= 3:
                 n += sum(int(x) for x in parts[:2] if x.isdigit())
         return n
+    engine_commits = {e["sha"]: e for e in hive.events() if e.get("event") == "commit" and e.get("sha")}
     if start_sha:
         _, log = git(["log", "--format=%H%x09%s", "%s..HEAD" % start_sha], hive.workdir)
         for line in log.splitlines():
             if "\t" not in line:
                 continue
             sha, subj = line.split("\t", 1)
-            m = re.match(r"hive\(checkpoint\): (?:work in progress by|before parallel batch by) (\S+)(?: before (T\d{4}-[\w-]+))?", subj)
-            if m:
-                if m.group(1) != role_id:
+            known = engine_commits.get(sha)
+            if known:
+                # engine made it: child work and merges are not ours, our own checkpoints are
+                if known.get("kind") != "checkpoint" or known.get("role") != role_id:
                     continue
-                if m.group(2) and tasks.get(m.group(2), {}).get("parent_task") not in (task_id, None):
+                if known.get("task_id") not in (task_id, None):
                     continue
-            elif subj.startswith("hive("):
-                continue  # verified child work, merges
+            # anything else, whatever its message says, was committed by the agent itself
             _, names = git(["show", "--name-only", "--format=", sha], hive.workdir)
             files.update(n for n in names.splitlines() if n)
             lines += numstat(git(["show", "--numstat", "--format=", sha], hive.workdir)[1])
@@ -1170,7 +1170,9 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
 
     ensure_identity(hive.workdir)
     if is_dirty(hive.workdir) and cfg.get("auto_commit"):
-        commit_all(hive.workdir, "hive(checkpoint): work in progress by %s before %s" % (caller, task_id))
+        sha = commit_all(hive.workdir, "hive(checkpoint): work in progress by %s before %s" % (caller, task_id))
+        if sha:
+            hive.ledger({"event": "commit", "sha": sha, "kind": "checkpoint", "role": caller, "task_id": parent_task, "before": task_id})
     start_sha = head_sha(hive.workdir)
     tasks_before = task_table(hive)
     prior = prior_progress(hive, role["id"], task_id, tasks_before) if role["level"] in (1, 2) else []
@@ -1295,7 +1297,10 @@ def dispatch(hive, roster, brief, retries_override=None, dry_run=False):
     files = changed_files(hive.workdir, start_sha)
     end_sha, stash_ref = start_sha, None
     if final == "PASS" and cfg.get("auto_commit"):
-        end_sha = commit_all(hive.workdir, "hive(%s): %s [%s]" % (role["id"], brief["title"], task_id)) or head_sha(hive.workdir)
+        made = commit_all(hive.workdir, "hive(%s): %s [%s]" % (role["id"], brief["title"], task_id))
+        if made:
+            hive.ledger({"event": "commit", "sha": made, "kind": "task", "role": role["id"], "task_id": task_id})
+        end_sha = made or head_sha(hive.workdir)
     elif final != "PASS" and cfg.get("on_fail") == "stash" and is_dirty(hive.workdir):
         code, _ = git(["stash", "push", "-u", "-m", "hive-failed:%s" % task_id], hive.workdir)
         if code == 0:
@@ -1350,7 +1355,10 @@ def batch(hive, roster, brief_paths, parallel):
         briefs.append((bp, b))
     ensure_identity(hive.workdir)
     if is_dirty(hive.workdir):
-        commit_all(hive.workdir, "hive(checkpoint): before parallel batch by %s" % os.environ.get("HIVE_CALLER_ROLE", "orchestrator"))
+        sha = commit_all(hive.workdir, "hive(checkpoint): before parallel batch by %s" % os.environ.get("HIVE_CALLER_ROLE", "orchestrator"))
+        if sha:
+            hive.ledger({"event": "commit", "sha": sha, "kind": "checkpoint", "role": os.environ.get("HIVE_CALLER_ROLE", "orchestrator"),
+                         "task_id": os.environ.get("HIVE_TASK_ID")})
     base = head_sha(hive.workdir)
     stamp = "%d-%d" % (int(time.time()), os.getpid())
     wts = []
@@ -1392,6 +1400,8 @@ def batch(hive, roster, brief_paths, parallel):
     for (bp, b, path, branch), rep in zip(wts, results):
         if rep.get("status") == "PASS":
             code, out = git(["merge", "--no-ff", "-q", "-m", "hive(merge): %s [%s]" % (b["title"], rep.get("task_id")), branch], hive.workdir)
+            if code == 0:
+                hive.ledger({"event": "commit", "sha": head_sha(hive.workdir), "kind": "merge", "role": rep.get("role"), "task_id": rep.get("task_id")})
             if code != 0:
                 git(["merge", "--abort"], hive.workdir)
                 rep["status"] = "FAIL"
