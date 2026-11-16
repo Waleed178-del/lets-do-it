@@ -28,7 +28,7 @@ flowchart TD
     F1 --> FL
 ```
 
-## The five checks
+## The checks
 
 | # | Check | Catches | Source of truth |
 |---|---|---|---|
@@ -37,6 +37,35 @@ flowchart TD
 | 3 | Scope | Agents editing other teams' files | `ownership.json` or brief scope, shared and ignore lists |
 | 4 | Deliverables | PASS with admitted gaps | The agent's own deliverables list |
 | 5 | Child cross check | Commanders hiding child failures | `.hive/ledger.jsonl` |
+| 6 | Delegation | Commanders doing the work themselves | ledger children, engine recorded commits, own edit budget |
+| 7 | Brief lint (before dispatch) | Malformed briefs wasting worker attempts | brief structure and path hygiene |
+
+## Before dispatch: brief lint
+
+```mermaid
+flowchart LR
+    B["Commander writes brief"] --> L{"objective present, list fields clean,<br/>no whitespace or trailing punctuation in paths,<br/>known model and effort?"}
+    L -->|no| R(["exit 3, exact reason on stderr<br/>commander fixes the brief, no agent ran"])
+    L -->|yes| D(["dispatch"])
+```
+
+## Commander checks: the chain of command is enforced
+
+```mermaid
+flowchart TD
+    C["Manager or supervisor reports PASS"] --> K{"Dispatched at least one child?<br/>unless brief sets allow_no_children,<br/>which is reported"}
+    K -->|no| F1(["FAIL: delegation is mandatory"])
+    K -->|yes| O["Attribute the commander's own edits:<br/>uncommitted changes, its checkpoint commits,<br/>any commit the engine did not make"]
+    O --> M{"Level"}
+    M -->|manager| M1{"Edited anything besides<br/>docs/summaries/?"}
+    M1 -->|yes| F2(["FAIL: manager edited files directly"])
+    M1 -->|no| P(["checks pass"])
+    M -->|supervisor| S1{"Own edits above 8 files<br/>or 60 changed lines?"}
+    S1 -->|yes| F3(["FAIL: that is worker work"])
+    S1 -->|no| P
+```
+
+Commit attribution trusts only SHAs the engine recorded in the ledger. A commit message that merely looks like `hive(...)` proves nothing.
 
 ## Scope resolution
 
@@ -51,6 +80,7 @@ flowchart TD
     C -->|no| D{"Any descendant<br/>has entries?"}
     D -->|yes| D1(["union of descendants' globs"])
     D -->|no| D2(["unrestricted<br/>only before phase 2 exists"])
+    C1 --> U(["commanders: plus every descendant's globs"])
     A1 & B1 & C1 & D1 & D2 --> Plus["plus _shared list, matched at any depth<br/>package.json, web/package.json, lockfiles, ..."]
     Plus --> Ign["ignored entirely: generated output<br/>node_modules, dist, .next, coverage, build caches, plus _ignore"]
 ```

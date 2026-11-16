@@ -9,7 +9,9 @@ Orchestrator (1)            your Claude Code session, runs /hive:build
         └── Workers (65)    plan parser, data modeler, endpoint builder, component builder, deployer, ...
 ```
 
-Diagrams of the whole system (52 Mermaid diagrams: mind map, chain of command, phase workflow, dispatch lifecycle, verification, parallel execution, failure handling, data model, agent protocols, model bidding, operations) are in [`docs/system/`](docs/system/README.md).
+**Proven end to end:** a full five phase build with real agents at every level produced a working app for $7.17, verified independently. See [`docs/live-runs/2026-11-16-quote-board.md`](docs/live-runs/2026-11-16-quote-board.md).
+
+Diagrams of the whole system (54 Mermaid diagrams: mind map, chain of command, phase workflow, dispatch lifecycle, verification, parallel execution, failure handling, data model, agent protocols, model bidding, operations) are in [`docs/system/`](docs/system/README.md).
 
 ## Install
 
@@ -80,7 +82,8 @@ hive.py models mode parent
 These rules are code, not prompt suggestions:
 
 * **Chain of command.** A role can dispatch only its direct reports. Workers dispatch nothing. Native subagents are disabled.
-* **Mandatory delegation.** Managers and supervisors that dispatch no children fail. Managers may not edit project files. Supervisors are limited to small glue fixes.
+* **Mandatory delegation.** Managers and supervisors that dispatch no children fail. Managers may not edit project files. Supervisors are limited to small glue fixes (files and lines). Only commits the engine itself made count as delegated work.
+* **Brief linting.** Malformed briefs are rejected before any agent runs.
 * **Structured reports** matching `schemas/report.schema.json`.
 * **Independent verification.** The engine re-runs each brief's `verify` commands (`@commands` resolves to the project's own install, lint, test and build).
 * **Scope.** Files outside a role's ownership globs fail the task. Shared files such as `web/package.json` and generated output are handled.
@@ -121,7 +124,7 @@ Headless agents run shell commands without asking (Bash is pre-approved, prompts
 ## Development
 
 ```bash
-python3 -m unittest -v tests/test_engine.py tests/test_features.py   # 43 tests, mock agent, no API cost
+python3 -m unittest -v tests/test_engine.py tests/test_features.py   # 47 tests, mock agent, no API cost
 python3 plugins/hive/skills/build/engine/hive.py validate
 python3 docs/system/generate_hierarchy.py                            # after editing roster.json
 ```
